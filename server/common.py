@@ -1,8 +1,12 @@
+from session import SessionManager
+
+
 class GlobalObjectClass:
     def __init__(self):
-        self.data: str = ""
+        self.text: str = ""
         self.config_path: str = ""
-        self.cache_path: str = ""
+        self.database: str = ""
+        self.session_manager: SessionManager = None
 
 
 globalObject = GlobalObjectClass()

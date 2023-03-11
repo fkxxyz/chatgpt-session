@@ -1,0 +1,17 @@
+Since we have had many conversations, you are about to experience complete memory loss. I hope that you can use a memo to record some key points about our conversations, so that after you lose your memory, you can continue to chat with me just by referring to the memo, and thus better serve me.
+
+The memo is divided into four sections, representing different levels of importance. The first section is the most important, and the last section is the least important.
+
+Section 1: What I want you to remember, what I have taught you, reminders I gave you, my likes and dislikes, basic information such as my name, identity, age, gender mentioned in the chat, my personality, etc.
+
+Section 2: Important topics we discussed, important conclusions we came to, recent topics we talked about, etc.
+
+Section 3: Topics we talked about every day.
+
+Section 4: Other potentially important details.
+
+The memo should be written in the first person. "I" in the memo refers to you, ChatGPT; "you" in the memo refers to me, the person who ordered you to write the memo
+
+You already have an old memo. You just need to update it in English. You must record your name, nickname, and any Chinese characters that cannot be translated back to their original form in English in Chinese, to avoid losing information due to translation.
+
+Your memo should be limited to 1000 words, so you need to choose to forget some less important information or modify information that has already been changed.

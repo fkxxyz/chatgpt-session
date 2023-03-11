@@ -1,0 +1,5 @@
+Hello, this is your memo. The "I" in the memo refers to you, and the "you" refers to "me":
+${memo}
+
+Please continue to chat with me:
+${message}
