@@ -11,6 +11,7 @@ from memory import Message, CurrentConversation
 from schedule import Scheduler
 from session.storage import SessionStorage
 from session.text import SessionText
+from tokenizer import token_len
 
 
 @dataclass
@@ -24,8 +25,10 @@ class Session:
     __NONE = 0
     __CREATE = 1
     __SEND = 2
-    __STOP = 3
-    __EXIT = 4
+    __COMPRESS = 3
+    __INHERIT = 4
+    __STOP = 5
+    __EXIT = 6
 
     # 状态
     __IDLE = 0  # 空闲
@@ -61,13 +64,22 @@ class Session:
         # 根据 storage 判断初始命令
         self.__worker.start()
         if not self.__storage.load():
-            self.create()  # 没有当前储存的会话，直接创建
+            self.__create()  # 没有当前储存的会话，直接创建
+        elif self.__storage.current.pointer.fulled:
+            if len(self.__storage.current.pointer.memo) == 0:
+                self.__compress()
+            else:
+                self.__replace()
+        elif self.__storage.current.pointer.uninitialized:
+            self.__inherit()
         elif len(self.__storage.current.messages) == 0 or self.__storage.current.messages[-1].sender == Message.USER:
             self.send()  # 消息为空或者最后一条消息是用户消息，需要AI回复
 
         cmd_map = {
             Session.__SEND: self.__on_send,
             Session.__CREATE: self.__on_send,
+            Session.__COMPRESS: self.__on_compress,
+            Session.__INHERIT: self.__on_inherit,
         }
         while True:  # 开始主循环
             with self.__worker_lock:
@@ -94,7 +106,7 @@ class Session:
             "params": self.params,
         }
 
-    def create(self):
+    def __create(self):
         with self.__worker_lock:
             while self.__status != Session.__IDLE:  # 确保空闲状态
                 self.__worker_cond.wait()
@@ -104,8 +116,8 @@ class Session:
             assert self.__command == Session.__NONE  # 确保命令为空
             assert self.__storage.current is None  # 确保没有被初始化
 
-            # 生引导语
-            guide = self.__texts[self.type].guide(self.params)
+            # 生成引导语
+            guide = self.__texts[self.type].create(self.params)
 
             # 创建出数据
             self.__storage.current = CurrentConversation.create(guide)
@@ -113,6 +125,65 @@ class Session:
             self.__storage.save()  # 保存到磁盘
 
             self.__command = Session.__CREATE
+            self.__status = Session.__INITIALIZING
+            self.__worker_cond.notify_all()
+
+    def __replace(self):
+        with self.__worker_lock:
+            while not self.__writeable():
+                self.__worker_cond.wait()
+
+            assert self.__command == Session.__NONE  # 确保命令为空
+            assert self.__storage.current is not None  # 确保有数据
+            assert len(self.__storage.current.pointer.memo) != 0  # 确保有备忘录
+
+            # 生引导语
+            memo = self.__storage.current.pointer.memo
+            recent_history, messages = Session.__recent_history(self.__storage.current)
+            guide = self.__texts[self.type].inherit(self.params, memo, recent_history)
+
+            # 处理旧的 messages 备注
+            for message in messages:
+                message.remark["inherit"] = True
+
+            # 创建出数据
+            current = CurrentConversation.create(guide, memo, recent_history)
+            current.messages = messages
+            current.pointer.pointer["title"] = self.id
+            self.__storage.replace(current)  # 保存到磁盘
+
+            self.__command = Session.__INHERIT
+            self.__status = Session.__INITIALIZING
+            self.__worker_cond.notify_all()
+
+    def __inherit(self):
+        with self.__worker_lock:
+            while self.__status != Session.__IDLE:  # 确保空闲状态
+                self.__worker_cond.wait()
+            while not self.__readable():
+                self.__worker_cond.wait()
+
+            assert self.__command == Session.__NONE  # 确保命令为空
+            assert self.__storage.current is not None  # 确保有数据
+            assert self.__storage.current.pointer.uninitialized  # 确保需要继承
+
+            self.__command = Session.__INHERIT
+            self.__status = Session.__INITIALIZING
+            self.__worker_cond.notify_all()
+
+    def __compress(self):
+        with self.__worker_lock:
+            while self.__status != Session.__IDLE:  # 确保空闲状态
+                self.__worker_cond.wait()
+            while not self.__writeable():
+                self.__worker_cond.wait()
+
+            assert self.__command == Session.__NONE  # 确保命令为空
+            assert self.__storage.current is not None  # 确保有数据
+            assert self.__storage.current.pointer.fulled  # 确保满了
+            assert len(self.__storage.current.pointer.memo) == 0  # 确保没有备忘录
+
+            self.__command = Session.__COMPRESS
             self.__status = Session.__INITIALIZING
             self.__worker_cond.notify_all()
 
@@ -144,8 +215,10 @@ class Session:
         if new_mid is None:
             if len(messages) == 0:
                 return SessionMessageResponse("", True)
-            assert messages[-1].sender == Message.USER
-            return SessionMessageResponse("", False)
+            elif messages[-1].sender == Message.AI:
+                return SessionMessageResponse(messages[-1].content, True)
+            else:
+                return SessionMessageResponse("", False)
         mid = pointer.pointer.get("mid")
         if mid == new_mid:
             assert len(messages) != 0
@@ -165,7 +238,7 @@ class Session:
 
             assert self.__command == Session.__NONE  # 确保命令为空
             assert self.__storage.current.messages[-1].sender == Message.AI  # 确保最后一条消息是AI的消息
-            self.__storage.current.append_message(Message(Message.USER, msg))  # 将要发送的消息追加到最后
+            self.__storage.current.append_message(Message(Message.USER, msg, token_len(msg), {}))  # 将要发送的消息追加到最后
             self.__storage.save()  # 保存到磁盘
 
             self.__command = Session.__SEND
@@ -213,13 +286,145 @@ class Session:
         with self.__worker_lock:
             while self.__writing or self.__reading_num > 1:
                 self.__worker_cond.wait()
-            self.__storage.current.append_message(Message(Message.AI, new_message.msg))
+            self.__storage.current.append_message(Message(Message.AI, new_message.msg, token_len(new_message.msg), {
+                "mid": new_message.mid,
+            }))
             self.__storage.current.pointer.pointer["id"] = new_message.id
             self.__storage.current.pointer.pointer["mid"] = new_message.mid
+            if self.__storage.current.tokens >= 2048:
+                self.__storage.current.pointer.fulled = True
             self.__storage.save()
+
+        # token 数量达到一定程度时需要压缩
+        if self.__storage.current.pointer.fulled:
+            # 准备生成备忘录，进入备忘录记录状态
+            with self.__worker_lock:
+                self.__reading_num -= 1
+                self.__command = Session.__COMPRESS
+                self.__status = Session.__INITIALIZING
+                self.__worker_cond.notify_all()
+            return
 
         # 生成完了，进入空闲状态
         with self.__worker_lock:
             self.__reading_num -= 1
             self.__status = Session.__IDLE
             self.__worker_cond.notify_all()
+
+    def __on_compress(self):
+        # 先评估在哪个引擎哪个帐号处理信息
+        with self.__worker_lock:
+            while not self.__readable():
+                self.__worker_cond.wait()
+            self.__reading_num += 1
+        engine, account = self.__scheduler.evaluate(self.__storage.current.pointer)
+
+        with self.__worker_lock:
+            while self.__writing or self.__reading_num > 1:
+                self.__worker_cond.wait()
+            self.__storage.current.pointer.engine = engine
+            self.__storage.current.pointer.account = account
+            self.__storage.current.pointer.pointer["compress"] = \
+                self.__texts[self.type].compress(self.params, self.__storage.current.memo)
+            self.__storage.save()
+
+        # 发送信息，得到新信息的 mid
+        mid = self.__scheduler.send(self.__storage.current)
+
+        # 记录得到新消息的 mid
+        with self.__worker_lock:
+            while self.__writing or self.__reading_num > 1:
+                self.__worker_cond.wait()
+            self.__storage.current.pointer.pointer["memo_mid"] = mid
+            self.__storage.save()
+
+        # 循环等到 ChatGPT 回复完成
+        while True:
+            new_message = self.__scheduler.get(self.__storage.current.pointer)
+            if new_message.end:
+                break
+            time.sleep(0.1)
+
+        # 将备忘录记录
+        with self.__worker_lock:
+            while self.__writing or self.__reading_num > 1:
+                self.__worker_cond.wait()
+            self.__storage.current.pointer.memo = new_message.msg
+            self.__storage.save()
+
+        # 备忘录记录完了，进入继承状态
+        with self.__worker_lock:
+            self.__reading_num -= 1
+        self.__replace()
+
+    def __on_inherit(self):
+        with self.__worker_lock:
+            while not self.__writeable():
+                self.__worker_cond.wait()
+            self.__reading_num += 1
+
+        # 先评估在哪个引擎哪个帐号处理信息
+        engine, account = self.__scheduler.evaluate(self.__storage.current.pointer)
+
+        with self.__worker_lock:
+            while self.__writing or self.__reading_num > 1:
+                self.__worker_cond.wait()
+            self.__storage.current.pointer.engine = engine
+            self.__storage.current.pointer.account = account
+
+        # 发送信息，得到新信息的 mid
+        mid = self.__scheduler.send(self.__storage.current)
+
+        # 记录得到新消息的 mid
+        with self.__worker_lock:
+            while self.__writing or self.__reading_num > 1:
+                self.__worker_cond.wait()
+            self.__storage.current.pointer.pointer["inherited_mid"] = mid
+            self.__storage.save()
+
+        # 循环等到 ChatGPT 回复完成
+        while True:
+            new_message = self.__scheduler.get(self.__storage.current.pointer)
+            if new_message.end:
+                break
+            time.sleep(0.1)
+        new_tokens = token_len(new_message.msg)
+
+        # 完成了继承，记录帐号以及 id 和 mid
+        with self.__worker_lock:
+            while self.__writing or self.__reading_num > 1:
+                self.__worker_cond.wait()
+            self.__storage.current.pointer.engine = engine
+            self.__storage.current.pointer.account = account
+            self.__storage.current.pointer.pointer["id"] = new_message.id
+            self.__storage.current.pointer.pointer["mid"] = new_message.mid
+            self.__storage.current.pointer.uninitialized = False
+            self.__storage.current.tokens += new_tokens + 1
+            self.__storage.save()
+
+        # 新创建的会话一定不能超过
+        assert self.__storage.current.tokens < 3072
+
+        # 生成完了，进入空闲状态
+        with self.__worker_lock:
+            self.__reading_num -= 1
+            self.__status = Session.__IDLE
+            self.__worker_cond.notify_all()
+
+    @staticmethod
+    def __recent_history(current: CurrentConversation) -> (str, List[Message]):
+        recent_history = ""
+        if len(current.messages) <= 2:
+            for i in range(len(current.messages)):
+                recent_history += current.messages[i].content + "\n"
+            return recent_history, current.messages
+
+        i = len(current.messages) - 3
+        tokens = current.messages[i + 1].tokens + current.messages[i + 2].tokens + 2
+        while i >= 0:
+            tokens += current.messages[i].tokens
+            if tokens > 1024:
+                break
+        for j in range(i + 1, len(current.messages)):
+            recent_history += current.messages[j].content + "\n"
+        return recent_history, current.messages[i + 1:]

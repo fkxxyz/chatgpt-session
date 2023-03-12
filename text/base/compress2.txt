@@ -37,4 +37,7 @@ If a field is not mentioned, delete the field directly. "Your basic information"
 
 You should write the memo in English, but you must record Chinese names, Chinese nicknames, and any Chinese characters that cannot be translated back to their original form in English in Chinese, to avoid losing information due to translation.
 
-Don't reply this message, just give your memo content, and the content needs to be wrapped in three back quotes like the template above:
+Here is your old memo, please update or merge directly from it:
+${memo}
+
+Don't reply this message, just give your updated memo content, and the content needs to be wrapped in three back quotes like the template above:

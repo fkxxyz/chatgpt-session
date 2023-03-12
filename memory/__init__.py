@@ -10,6 +10,8 @@ class EnginePointer:
     engine: str
     account: str
     fulled: bool
+    memo: str
+    uninitialized: bool
     pointer: dict
 
 
@@ -17,6 +19,8 @@ class EnginePointer:
 class Message:
     sender: int
     content: str
+    tokens: int
+    remark: dict
 
     AI = 0
     USER = 1
@@ -32,13 +36,13 @@ class CurrentConversation:
     tokens: int
 
     @staticmethod
-    def create(guide):
+    def create(guide, memo: str = "", recent_history: str = ""):
         return CurrentConversation(
             guide,
-            "",
-            "",
+            memo,
+            recent_history,
             [],
-            EnginePointer("", "", False, {}),
+            EnginePointer("", "", False, "", len(memo) != 0, {}),
             token_len(guide) + 1,
         )
 

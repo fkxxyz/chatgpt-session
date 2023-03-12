@@ -61,6 +61,8 @@ def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = 
             return r.mid
         sleep_strategy = sleep_strategies.get(resp.status_code)
         if sleep_strategy is None:
+            if resp.status_code == http.HTTPStatus.UNAUTHORIZED:
+                raise error.Unauthorized(resp.content)
             raise error.InternalError(resp.status_code, resp.content)
         if wait_ms == 0:
             wait_ms = sleep_strategy.start
@@ -91,11 +93,11 @@ class Scheduler:
         for account_dict in accounts_dict:
             accounts.append(AccountInfo(**account_dict))
 
-        # 如果会话未满，则不改变账户
-        if len(pointer.engine) != 0 and len(pointer.account) != 0 and not pointer.fulled:
+        # 如果不是新创建会话，则不改变账户
+        if not pointer.uninitialized and len(pointer.engine) != 0 and len(pointer.account) != 0:
             return pointer.engine, pointer.account
 
-        # 如果会话已满，则选择负载最低的账户
+        # 如果是新创建的会话，则选择负载最低的账户
         accounts.sort(key=account_load)
         return RevChatGPTWeb.__name__, accounts[0].id
 
@@ -105,7 +107,14 @@ class Scheduler:
         if current.pointer.engine == RevChatGPTWeb.__name__:
             # 使用网页版的免费 ChatGPT
             api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
-            if len(current.messages) == 0:
+            if current.pointer.fulled:
+                # 总 token 已满，需要压缩
+                assert current.messages[-1].sender == Message.AI  # 最后一条消息必须是 AI
+                mid = rev_chatgpt_web_send(
+                    api, current.pointer.account, current.pointer.pointer["compress"],
+                    current.pointer.pointer["id"], current.pointer.pointer["mid"],
+                )
+            elif current.pointer.uninitialized or len(current.messages) == 0:
                 # 第一次发送消息，需要新建会话，发送 guide
                 mid = rev_chatgpt_web_send(api, current.pointer.account, current.guide)
 
@@ -126,6 +135,8 @@ class Scheduler:
                 )
 
             return mid
+        else:
+            raise error.NotImplementedError1(f"no such engine: f{current.pointer.engine}")
 
     def get(self, pointer: EnginePointer) -> GetMessageResponse:
         assert pointer.engine in self.__engines
@@ -133,8 +144,16 @@ class Scheduler:
         if pointer.engine == RevChatGPTWeb.__name__:
             # 使用网页版的免费 ChatGPT
             api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
-            new_message = GetMessageResponse.from_body(
-                call_until_success(lambda: api.get(pointer.pointer["new_mid"])))
+
+            if pointer.fulled:
+                new_message = GetMessageResponse.from_body(
+                    call_until_success(lambda: api.get(pointer.pointer["memo_mid"])))
+            elif pointer.uninitialized:
+                new_message = GetMessageResponse.from_body(
+                    call_until_success(lambda: api.get(pointer.pointer["inherited_mid"])))
+            else:
+                new_message = GetMessageResponse.from_body(
+                    call_until_success(lambda: api.get(pointer.pointer["new_mid"])))
         else:
             raise error.NotImplementedError1(f"no such engine: f{pointer.engine}")
         return new_message

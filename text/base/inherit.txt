@@ -1,5 +1,9 @@
-Hello, this is your memo. The "I" in the memo refers to you, and the "you" refers to "me":
+Hello, I am ${name}. (Please communicate with me in Chinese unless I specifically request otherwise, and don't repeat tell me you can communicate with me in Chinese)
+
+The following is your memo (memo is written in the first person, "I" in the memo refers to you and "you" refers to me):
 ${memo}
 
-Please continue to chat with me:
-${message}
+The following is our recent chat history:
+${history}
+
+Now, you will continue to chat with me, if you understand, please just reply me "ok".

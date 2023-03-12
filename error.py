@@ -43,6 +43,13 @@ class ServerIsBusy(ChatGPTSessionError):
         pass
 
 
+class Unauthorized(ChatGPTSessionError):
+    HttpStatus = http.HTTPStatus.UNAUTHORIZED
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+
 class NotImplementedError1(ChatGPTSessionError):
     HttpStatus = http.HTTPStatus.NOT_IMPLEMENTED
 
