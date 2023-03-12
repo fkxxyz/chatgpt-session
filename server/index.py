@@ -1,10 +1,12 @@
 import http
+from dataclasses import asdict
 
 import flask
 
 import error
 from server import app
 from server.common import globalObject
+from session.session import Session
 
 
 @app.route('/api/ping')
@@ -21,7 +23,7 @@ def handle_list():
 
     result = []
     for s in sessions:
-        result.append(s.__dict__())
+        result.append(s.asdict())
     return flask.jsonify(result)
 
 
@@ -39,7 +41,7 @@ def handle_create():
     except error.ChatGPTSessionError as e:
         return flask.make_response(str(e), e.HttpStatus)
 
-    return flask.jsonify(s.__dict__())
+    return flask.jsonify(s.asdict())
 
 
 @app.route('/api/delete', methods=['DELETE'])
@@ -58,4 +60,43 @@ def handle_delete():
 
 @app.route('/api/send', methods=['POST'])
 def handle_send():
-    return ''
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+    msg_bytes = flask.request.get_data()
+    msg_str = msg_bytes.decode()
+
+    try:
+        session.append_msg(msg_str)
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+
+    return flask.jsonify({})
+
+
+def get_session_query(id_: str) -> (Session, flask.Response | None):
+    if id_ is None or len(id_) == 0:
+        session = globalObject.session_manager.get_default()
+        if session is None:
+            return None, flask.make_response('error: no sessions', http.HTTPStatus.BAD_REQUEST)
+        return session, None
+    session = globalObject.session_manager.get(id_)
+    if session is None:
+        return None, flask.make_response(f'error: no such session: {session}', http.HTTPStatus.BAD_REQUEST)
+    return session, None
+
+
+@app.route('/api/get')
+def handle_get():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+
+    try:
+        m = session.get()
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+
+    return flask.jsonify(asdict(m))

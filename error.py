@@ -34,3 +34,17 @@ class InternalError(ChatGPTSessionError):
 
     def __init__(self, *args, **kwargs):
         pass
+
+
+class ServerIsBusy(ChatGPTSessionError):
+    HttpStatus = http.HTTPStatus.SERVICE_UNAVAILABLE
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+class NotImplementedError1(ChatGPTSessionError):
+    HttpStatus = http.HTTPStatus.NOT_IMPLEMENTED
+
+    def __init__(self, *args, **kwargs):
+        pass

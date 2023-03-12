@@ -52,6 +52,92 @@ cmd_delete() {
   jq -r '.' <<< "$json_str"
 }
 
+cmd_send() {
+  local msg="$1"
+  local id="$2"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s --data-binary "$msg" "$BASE_URL/api/send?id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
+cmd_sendi() {
+  local id="$1"
+  local msg
+  msg="$(cat)"
+  echo "正在发送..." >&2
+  local result exit_code=0
+  result="$("$0" send "$msg" "$id")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$result"
+    return "$exit_code"
+  fi
+  watch -et -n 0.1 "$0" geti <<< '' || true
+  cmd_get "$id"
+}
+
+cmd_get() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/get?id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  local msg end
+  msg="$(jq -r '.msg' <<< "$json_str")"
+  end="$(jq -r '.end' <<< "$json_str")"
+  if [ "$end" != "true" ]; then
+    msg="${msg}_"
+  fi
+  printf '%s\n' "$msg"
+}
+
+cmd_getl() {
+  local cols
+  cols="$(tput cols)"
+  local lines
+  lines="$(tput lines)"
+  local data
+  data="$(tail "-$lines")"
+  local lines_line=()
+  local line
+  local n l
+  while read -r line; do
+    n="$(wc -L <<< "$line")"
+    l=$((n/cols))
+    if [ $((n%cols)) != 0 ]; then
+      l=$((l+1))
+    fi
+    if [ "$l" == 0 ]; then
+      l=1
+    fi
+    lines_line+=("$l")
+  done <<< "$data"
+  local i n=0 l=0
+  for ((i = $((${#lines_line[@]}-1)); i >= 0; i--)); do
+    n="$((n+lines_line[i]))"
+    if [ "$n" -gt "$lines" ]; then
+      break
+    fi
+    l=$((l+1))
+  done
+  echo "$l"
+}
+
+cmd_geti() {
+  local mid="$1"
+  local result
+  result="$("$0" get "$mid")"
+  local lines
+  lines="$(cmd_getl <<< "$result")"
+  cat <<< "$result" | tail "-$lines"
+  tail -1 <<< "$result" | grep -q '_$'
+}
+
 cmd_help(){
   printf 'Usage: %s COMMAND
 
@@ -60,7 +146,7 @@ Commands:
   create <id> <type> <<< <params>
   delete <id>
   send [id]
-  get <mid>
+  get [id]
   sendi [id]
 
   help

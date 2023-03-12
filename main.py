@@ -2,20 +2,27 @@
 # -*- encoding:utf-8 -*-
 
 import argparse
+import json
 import os
 
+from config import Config
+from engine.rev_chatgpt_web import RevChatGPTWeb
+from schedule import Scheduler
 from server import app
 from server.common import globalObject
-from session import SessionManager
+from session.manager import SessionManager
 
 
-def run(host: str, port: int, text: str, config: str, database: str):
+def run(host: str, port: int, text: str, config_path: str, database: str):
     os.makedirs(database, exist_ok=True)
 
+    config = Config.from_file(config_path)
+    engines = RevChatGPTWeb(config.engines[RevChatGPTWeb.__name__].url)
+    scheduler = Scheduler(engines)
+
     globalObject.text = text
-    globalObject.config_path = config
     globalObject.database = database
-    globalObject.session_manager = SessionManager(text, database)
+    globalObject.session_manager = SessionManager(text, database, scheduler)
 
     from waitress import serve
     serve(app, host=host, port=port)
