@@ -3,7 +3,9 @@
 
 import argparse
 import json
+import logging
 import os
+import sys
 
 from config import Config
 from engine.rev_chatgpt_web import RevChatGPTWeb
@@ -36,6 +38,11 @@ def main() -> int:
     parser.add_argument('--config', '-c', type=str, help='config.json', default="config.json")
     parser.add_argument('--database', '-d', type=str, help='database path', default='./database')
     args = parser.parse_args()
+
+    LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
+    log_level = logging.DEBUG
+    logging.basicConfig(level=log_level, format=LOG_FORMAT, handlers=[logging.StreamHandler(sys.stdout)])
+
     run(args.host, args.port, args.text, args.config, args.database)
     return 0
 

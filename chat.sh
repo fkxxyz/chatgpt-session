@@ -52,6 +52,24 @@ cmd_delete() {
   jq -r '.' <<< "$json_str"
 }
 
+cmd_status() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/status?id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  local i
+  i="$(jq -r '.status' <<< "$json_str")"
+  local status=(
+    "IDLE"
+    "GENERATING"
+    "INITIALIZING"
+  )
+  printf '%s\n' "${status[i]}"
+}
+
 cmd_send() {
   local msg="$1"
   local id="$2"

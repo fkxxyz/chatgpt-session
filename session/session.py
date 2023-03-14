@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 import os
 import threading
 import time
@@ -7,6 +8,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import List
 
+import error
 from memory import Message, CurrentConversation
 from schedule import Scheduler
 from session.storage import SessionStorage
@@ -29,6 +31,15 @@ class Session:
     __INHERIT = 4
     __STOP = 5
     __EXIT = 6
+    __CMD_STR = {
+        __NONE: "NONE",
+        __CREATE: "CREATE",
+        __SEND: "SEND",
+        __COMPRESS: "COMPRESS",
+        __INHERIT: "INHERIT",
+        __STOP: "STOP",
+        __EXIT: "EXIT",
+    }
 
     # 状态
     __IDLE = 0  # 空闲
@@ -42,6 +53,7 @@ class Session:
         self.type: str = j["type"]
         self.params: dict = j["params"]
 
+        self.__logger = logging.getLogger(self.id)
         self.__texts: OrderedDict[str, SessionText] = texts
         self.__scheduler: Scheduler = scheduler
         self.__storage: SessionStorage = SessionStorage(d, self.type, self.params)
@@ -83,9 +95,12 @@ class Session:
         }
         while True:  # 开始主循环
             with self.__worker_lock:
+                if self.__command == Session.__NONE:
+                    self.__logger.info("waiting for command ...")
                 while self.__command == Session.__NONE:  # 等待新命令
                     self.__worker_cond.wait()
                 command = self.__command
+                self.__logger.info("get command %s", Session.__CMD_STR[command])
                 self.__command = Session.__NONE
             fn = cmd_map.get(command)
             assert fn is not None
@@ -106,7 +121,12 @@ class Session:
             "params": self.params,
         }
 
+    def status(self) -> int:
+        with self.__worker_lock:
+            return self.__status
+
     def __create(self):
+        self.__logger.info("put command CREATE")
         with self.__worker_lock:
             while self.__status != Session.__IDLE:  # 确保空闲状态
                 self.__worker_cond.wait()
@@ -129,6 +149,7 @@ class Session:
             self.__worker_cond.notify_all()
 
     def __replace(self):
+        self.__logger.info("put command REPLACE")
         with self.__worker_lock:
             while not self.__writeable():
                 self.__worker_cond.wait()
@@ -157,6 +178,7 @@ class Session:
             self.__worker_cond.notify_all()
 
     def __inherit(self):
+        self.__logger.info("put command INHERIT")
         with self.__worker_lock:
             while self.__status != Session.__IDLE:  # 确保空闲状态
                 self.__worker_cond.wait()
@@ -172,6 +194,7 @@ class Session:
             self.__worker_cond.notify_all()
 
     def __compress(self):
+        self.__logger.info("put command COMPRESS")
         with self.__worker_lock:
             while self.__status != Session.__IDLE:  # 确保空闲状态
                 self.__worker_cond.wait()
@@ -188,6 +211,7 @@ class Session:
             self.__worker_cond.notify_all()
 
     def send(self):
+        self.__logger.info("put command SEND")
         with self.__worker_lock:
             while self.__status != Session.__IDLE:  # 确保空闲状态
                 self.__worker_cond.wait()
@@ -246,6 +270,8 @@ class Session:
             self.__worker_cond.notify_all()
 
     def __on_send(self):
+        self.__logger.info("__on_send() enter")
+
         # 先评估在哪个引擎哪个帐号处理信息
         with self.__worker_lock:
             while not self.__readable():
@@ -266,7 +292,10 @@ class Session:
             self.__storage.current.pointer.account = account
 
         # 发送信息，得到新信息的 mid
-        mid = self.__scheduler.send(self.__storage.current)
+        try:
+            mid = self.__scheduler.send(self.__storage.current)
+        except (error.Unauthorized, error.ServerIsBusy) as e:
+            pass
 
         # 记录得到新消息的 mid
         with self.__worker_lock:
@@ -310,8 +339,10 @@ class Session:
             self.__reading_num -= 1
             self.__status = Session.__IDLE
             self.__worker_cond.notify_all()
+        self.__logger.info("__on_send() leave")
 
     def __on_compress(self):
+        self.__logger.info("__on_compress() enter")
         # 先评估在哪个引擎哪个帐号处理信息
         with self.__worker_lock:
             while not self.__readable():
@@ -356,8 +387,10 @@ class Session:
         with self.__worker_lock:
             self.__reading_num -= 1
         self.__replace()
+        self.__logger.info("__on_compress() leave")
 
     def __on_inherit(self):
+        self.__logger.info("__on_inherit() enter")
         with self.__worker_lock:
             while not self.__writeable():
                 self.__worker_cond.wait()
@@ -410,14 +443,12 @@ class Session:
             self.__reading_num -= 1
             self.__status = Session.__IDLE
             self.__worker_cond.notify_all()
+        self.__logger.info("__on_inherit() leave")
 
     @staticmethod
     def __recent_history(current: CurrentConversation) -> (str, List[Message]):
-        recent_history = ""
         if len(current.messages) <= 2:
-            for i in range(len(current.messages)):
-                recent_history += current.messages[i].content + "\n"
-            return recent_history, current.messages
+            return Session.__messages_str(current.messages), current.messages[:]
 
         i = len(current.messages) - 3
         tokens = current.messages[i + 1].tokens + current.messages[i + 2].tokens + 2
@@ -425,6 +456,16 @@ class Session:
             tokens += current.messages[i].tokens
             if tokens > 1024:
                 break
-        for j in range(i + 1, len(current.messages)):
-            recent_history += current.messages[j].content + "\n"
-        return recent_history, current.messages[i + 1:]
+        return Session.__messages_str(current.messages, i + 1, len(current.messages)), current.messages[i + 1:]
+
+    @staticmethod
+    def __messages_str(messages: List[Message], start: int = 0, end: int = None) -> str:
+        if end is None:
+            end = len(messages)
+        s = ""
+        for i in range(start, end):
+            if messages[i].sender == Message.AI:
+                s += 'You: ' + messages[i].content + "\n"
+            if messages[i].sender == Message.USER:
+                s += 'Me: ' + messages[i].content + "\n"
+        return s

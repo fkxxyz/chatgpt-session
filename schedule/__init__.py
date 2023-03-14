@@ -17,12 +17,12 @@ def call_until_success(fn: Callable[[], requests.Response]) -> bytes:
             resp = fn()
         except requests.RequestException as e:
             print(f"请求错误： {e}")
-            print(f"等待 10 毫秒后重试 ...")
+            print(f"等待 10 秒后重试 ...")
             time.sleep(10)
             continue
         if resp.status_code != http.HTTPStatus.OK:
             print(f"响应返回错误 {resp.status_code}： {resp.content.decode()}")
-            print(f"等待 10 毫秒后重试 ...")
+            print(f"等待 10 秒后重试 ...")
             time.sleep(10)
             continue
 
@@ -41,7 +41,7 @@ class SleepStrategy:
 
 
 sleep_strategies = {
-    409: SleepStrategy(10000, 2, 1200000),
+    409: SleepStrategy(10000, 1, 10000),
     500: SleepStrategy(10000, 2, 120000),
     503: SleepStrategy(10000, 2, 120000),
     522: SleepStrategy(10000, 2, 120000),
@@ -63,6 +63,8 @@ def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = 
         if sleep_strategy is None:
             if resp.status_code == http.HTTPStatus.UNAUTHORIZED:
                 raise error.Unauthorized(resp.content)
+            if resp.status_code == http.HTTPStatus.TOO_MANY_REQUESTS:
+                raise error.ServerIsBusy(resp.content)
             raise error.InternalError(resp.status_code, resp.content)
         if wait_ms == 0:
             wait_ms = sleep_strategy.start

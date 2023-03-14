@@ -100,3 +100,18 @@ def handle_get():
         return flask.make_response(str(e), e.HttpStatus)
 
     return flask.jsonify(asdict(m))
+
+
+@app.route('/api/status')
+def handle_status():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+
+    try:
+        status = session.status()
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+
+    return flask.jsonify({"status": status})

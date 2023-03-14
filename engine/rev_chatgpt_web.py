@@ -8,9 +8,10 @@ import requests
 class AccountInfo:
     id: str
     email: str
-    valid: bool
+    is_logged_in: bool
     counter: int
     is_busy: bool
+    is_disabled: bool
     err: str
 
 
