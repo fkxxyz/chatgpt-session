@@ -8,6 +8,7 @@ class EngineConfig(NamedTuple):
 
 class Config(NamedTuple):
     engines: OrderedDict[str, EngineConfig]
+    openai: dict
 
     @staticmethod
     def from_file(config_path: str):

@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from typing import List
 
 import error
+from engine.openai_chat import OpenAIChatCompletion
+from engine.rev_chatgpt_web import RevChatGPTWeb
 from memory import Message, CurrentConversation
 from schedule import Scheduler
 from session.storage import SessionStorage
@@ -235,23 +237,30 @@ class Session:
             if len(self.__storage.current.messages) != 0:
                 messages.append(copy.deepcopy(self.__storage.current.messages[-1]))
 
-        new_mid = pointer.pointer.get("new_mid")
-        if new_mid is None:
+        if pointer.engine == RevChatGPTWeb.__name__:
+            new_mid = pointer.pointer.get("new_mid")
+            if new_mid is None:
+                if len(messages) == 0:
+                    return SessionMessageResponse("", True)
+                elif messages[-1].sender == Message.AI:
+                    return SessionMessageResponse(messages[-1].content, True)
+                else:
+                    return SessionMessageResponse("", False)
+            mid = pointer.pointer.get("mid")
+            if mid == new_mid:
+                assert len(messages) != 0
+                if messages[-1].sender == Message.AI:
+                    return SessionMessageResponse(messages[-1].content, True)
+                else:
+                    return SessionMessageResponse("", False)
+            new_message = self.__scheduler.get(pointer)
+            return SessionMessageResponse(new_message.msg, new_message.end)
+        elif pointer.engine == OpenAIChatCompletion.__name__:
             if len(messages) == 0:
                 return SessionMessageResponse("", True)
-            elif messages[-1].sender == Message.AI:
-                return SessionMessageResponse(messages[-1].content, True)
-            else:
-                return SessionMessageResponse("", False)
-        mid = pointer.pointer.get("mid")
-        if mid == new_mid:
-            assert len(messages) != 0
             if messages[-1].sender == Message.AI:
                 return SessionMessageResponse(messages[-1].content, True)
-            else:
-                return SessionMessageResponse("", False)
-        new_message = self.__scheduler.get(pointer)
-        return SessionMessageResponse(new_message.msg, new_message.end)
+            return SessionMessageResponse("", False)
 
     def append_msg(self, msg: str):
         with self.__worker_lock:
@@ -277,52 +286,74 @@ class Session:
             while not self.__readable():
                 self.__worker_cond.wait()
             self.__reading_num += 1
-        engine, account = self.__scheduler.evaluate(self.__storage.current.pointer)
 
-        # 考虑需要压缩的情况
-        if len(self.__storage.current.pointer.engine) != 0 and self.__storage.current.pointer.account != 0 and \
-                (engine != self.__storage.current.pointer.engine or account != self.__storage.current.pointer.account):
-            # TODO 需要压缩
-            pass
-
-        with self.__worker_lock:
-            while self.__writing or self.__reading_num > 1:
-                self.__worker_cond.wait()
-            self.__storage.current.pointer.engine = engine
-            self.__storage.current.pointer.account = account
-
-        # 发送信息，得到新信息的 mid
-        try:
-            mid = self.__scheduler.send(self.__storage.current)
-        except (error.Unauthorized, error.ServerIsBusy) as e:
-            pass
-
-        # 记录得到新消息的 mid
-        with self.__worker_lock:
-            while self.__writing or self.__reading_num > 1:
-                self.__worker_cond.wait()
-            self.__storage.current.pointer.pointer["new_mid"] = mid
-            self.__storage.save()
-
-        # 循环等到 ChatGPT 回复完成
         while True:
-            new_message = self.__scheduler.get(self.__storage.current.pointer)
-            if new_message.end:
-                break
-            time.sleep(0.1)
+            engine, account = self.__scheduler.evaluate(self.__storage.current.pointer)
 
-        # 将 ChatGPT 回复的消息加入到记录中
-        with self.__worker_lock:
-            while self.__writing or self.__reading_num > 1:
-                self.__worker_cond.wait()
-            self.__storage.current.append_message(Message(Message.AI, new_message.msg, token_len(new_message.msg), {
-                "mid": new_message.mid,
-            }))
-            self.__storage.current.pointer.pointer["id"] = new_message.id
-            self.__storage.current.pointer.pointer["mid"] = new_message.mid
-            if self.__storage.current.tokens >= 2048:
-                self.__storage.current.pointer.fulled = True
-            self.__storage.save()
+            # 考虑需要压缩的情况
+            if len(self.__storage.current.pointer.engine) != 0 and self.__storage.current.pointer.account != 0 and \
+                    (
+                            engine != self.__storage.current.pointer.engine or account != self.__storage.current.pointer.account):
+                # TODO 需要压缩
+                pass
+
+            self.__logger.info("__on_send() select engine %s", engine)
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.engine = engine
+                self.__storage.current.pointer.account = account
+
+            # 发送信息，得到新信息的 mid
+            try:
+                reply = self.__scheduler.send(self.__storage.current)
+                break
+            except (error.Unauthorized, error.ServerIsBusy) as err:
+                self.__logger.error("__on_send() send error: %s", err)
+                self.__storage.current.pointer.engine = ""
+                self.__storage.current.pointer.account = ""
+                time.sleep(1)
+
+        if self.__storage.current.pointer.engine == OpenAIChatCompletion.__name__:
+            # 将回复的消息加入到记录中
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.ai_index = len(self.__storage.current.messages)
+                self.__storage.current.append_message(Message(Message.AI, reply, token_len(reply), {}))
+                if self.__storage.current.tokens >= 2048:
+                    self.__storage.current.pointer.fulled = True
+                self.__storage.save()
+        if self.__storage.current.pointer.engine == RevChatGPTWeb.__name__:
+            mid = reply
+
+            # 记录得到新消息的 mid
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.ai_index = len(self.__storage.current.messages)
+                self.__storage.current.pointer.pointer["new_mid"] = mid
+                self.__storage.save()
+
+            # 循环等到 ChatGPT 回复完成
+            while True:
+                new_message = self.__scheduler.get(self.__storage.current.pointer)
+                if new_message.end:
+                    break
+                time.sleep(0.1)
+
+            # 将 ChatGPT 回复的消息加入到记录中
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.append_message(Message(Message.AI, new_message.msg, token_len(new_message.msg), {
+                    "mid": new_message.mid,
+                }))
+                self.__storage.current.pointer.pointer["id"] = new_message.id
+                self.__storage.current.pointer.pointer["mid"] = new_message.mid
+                if self.__storage.current.tokens >= 2048:
+                    self.__storage.current.pointer.fulled = True
+                self.__storage.save()
 
         # token 数量达到一定程度时需要压缩
         if self.__storage.current.pointer.fulled:
@@ -348,39 +379,54 @@ class Session:
             while not self.__readable():
                 self.__worker_cond.wait()
             self.__reading_num += 1
-        engine, account = self.__scheduler.evaluate(self.__storage.current.pointer)
 
-        with self.__worker_lock:
-            while self.__writing or self.__reading_num > 1:
-                self.__worker_cond.wait()
-            self.__storage.current.pointer.engine = engine
-            self.__storage.current.pointer.account = account
-            self.__storage.current.pointer.pointer["compress"] = \
-                self.__texts[self.type].compress(self.params, self.__storage.current.memo)
-            self.__storage.save()
-
-        # 发送信息，得到新信息的 mid
-        mid = self.__scheduler.send(self.__storage.current)
-
-        # 记录得到新消息的 mid
-        with self.__worker_lock:
-            while self.__writing or self.__reading_num > 1:
-                self.__worker_cond.wait()
-            self.__storage.current.pointer.pointer["memo_mid"] = mid
-            self.__storage.save()
-
-        # 循环等到 ChatGPT 回复完成
         while True:
-            new_message = self.__scheduler.get(self.__storage.current.pointer)
-            if new_message.end:
+            engine, account = self.__scheduler.evaluate(self.__storage.current.pointer)
+
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.engine = engine
+                self.__storage.current.pointer.account = account
+                self.__storage.current.pointer.pointer["compress"] = \
+                    self.__texts[self.type].compress(self.params, self.__storage.current.memo)
+                self.__storage.save()
+
+            # 发送信息，得到新信息的 mid
+            try:
+                reply = self.__scheduler.send(self.__storage.current)
                 break
-            time.sleep(0.1)
+            except (error.Unauthorized, error.ServerIsBusy) as err:
+                self.__logger.error("__on_send() send error: %s", err)
+                self.__storage.current.pointer.engine = ""
+                self.__storage.current.pointer.account = ""
+                time.sleep(1)
+
+        if self.__storage.current.pointer.engine == OpenAIChatCompletion.__name__:
+            pass
+        if self.__storage.current.pointer.engine == RevChatGPTWeb.__name__:
+            mid = reply
+
+            # 记录得到新消息的 mid
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.pointer["memo_mid"] = mid
+                self.__storage.save()
+
+            # 循环等到 ChatGPT 回复完成
+            while True:
+                new_message = self.__scheduler.get(self.__storage.current.pointer)
+                if new_message.end:
+                    break
+                time.sleep(0.1)
+            reply = new_message.msg
 
         # 将备忘录记录
         with self.__worker_lock:
             while self.__writing or self.__reading_num > 1:
                 self.__worker_cond.wait()
-            self.__storage.current.pointer.memo = new_message.msg
+            self.__storage.current.pointer.memo = reply
             self.__storage.save()
 
         # 备忘录记录完了，进入继承状态
@@ -396,44 +442,63 @@ class Session:
                 self.__worker_cond.wait()
             self.__reading_num += 1
 
-        # 先评估在哪个引擎哪个帐号处理信息
-        engine, account = self.__scheduler.evaluate(self.__storage.current.pointer)
-
-        with self.__worker_lock:
-            while self.__writing or self.__reading_num > 1:
-                self.__worker_cond.wait()
-            self.__storage.current.pointer.engine = engine
-            self.__storage.current.pointer.account = account
-
-        # 发送信息，得到新信息的 mid
-        mid = self.__scheduler.send(self.__storage.current)
-
-        # 记录得到新消息的 mid
-        with self.__worker_lock:
-            while self.__writing or self.__reading_num > 1:
-                self.__worker_cond.wait()
-            self.__storage.current.pointer.pointer["inherited_mid"] = mid
-            self.__storage.save()
-
-        # 循环等到 ChatGPT 回复完成
         while True:
-            new_message = self.__scheduler.get(self.__storage.current.pointer)
-            if new_message.end:
-                break
-            time.sleep(0.1)
-        new_tokens = token_len(new_message.msg)
+            # 先评估在哪个引擎哪个帐号处理信息
+            engine, account = self.__scheduler.evaluate(self.__storage.current.pointer)
 
-        # 完成了继承，记录帐号以及 id 和 mid
-        with self.__worker_lock:
-            while self.__writing or self.__reading_num > 1:
-                self.__worker_cond.wait()
-            self.__storage.current.pointer.engine = engine
-            self.__storage.current.pointer.account = account
-            self.__storage.current.pointer.pointer["id"] = new_message.id
-            self.__storage.current.pointer.pointer["mid"] = new_message.mid
-            self.__storage.current.pointer.uninitialized = False
-            self.__storage.current.tokens += new_tokens + 1
-            self.__storage.save()
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.engine = engine
+                self.__storage.current.pointer.account = account
+
+            # 发送信息，得到新信息的 mid
+            try:
+                reply = self.__scheduler.send(self.__storage.current)
+                break
+            except (error.Unauthorized, error.ServerIsBusy) as err:
+                self.__logger.error("__on_send() send error: %s", err)
+                self.__storage.current.pointer.engine = ""
+                self.__storage.current.pointer.account = ""
+                time.sleep(1)
+
+        if self.__storage.current.pointer.engine == OpenAIChatCompletion.__name__:
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.engine = engine
+                self.__storage.current.pointer.account = account
+                self.__storage.current.pointer.uninitialized = False
+                self.__storage.save()
+        if self.__storage.current.pointer.engine == RevChatGPTWeb.__name__:
+            mid = reply
+
+            # 记录得到新消息的 mid
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.pointer["inherited_mid"] = mid
+                self.__storage.save()
+
+            # 循环等到 ChatGPT 回复完成
+            while True:
+                new_message = self.__scheduler.get(self.__storage.current.pointer)
+                if new_message.end:
+                    break
+                time.sleep(0.1)
+            new_tokens = token_len(new_message.msg)
+
+            # 完成了继承，记录帐号以及 id 和 mid
+            with self.__worker_lock:
+                while self.__writing or self.__reading_num > 1:
+                    self.__worker_cond.wait()
+                self.__storage.current.pointer.engine = engine
+                self.__storage.current.pointer.account = account
+                self.__storage.current.pointer.pointer["id"] = new_message.id
+                self.__storage.current.pointer.pointer["mid"] = new_message.mid
+                self.__storage.current.pointer.uninitialized = False
+                self.__storage.current.tokens += new_tokens + 1
+                self.__storage.save()
 
         # 新创建的会话一定不能超过
         assert self.__storage.current.tokens < 3072

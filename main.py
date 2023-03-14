@@ -7,7 +7,10 @@ import logging
 import os
 import sys
 
+import openai
+
 from config import Config
+from engine.openai_chat import OpenAIChatCompletion
 from engine.rev_chatgpt_web import RevChatGPTWeb
 from schedule import Scheduler
 from server import app
@@ -19,7 +22,11 @@ def run(host: str, port: int, text: str, config_path: str, database: str):
     os.makedirs(database, exist_ok=True)
 
     config = Config.from_file(config_path)
-    engines = RevChatGPTWeb(config.engines[RevChatGPTWeb.__name__].url)
+    openai.proxy = config.openai["proxy"]
+    engines = {
+        RevChatGPTWeb.__name__: RevChatGPTWeb(config.engines[RevChatGPTWeb.__name__].url),
+        OpenAIChatCompletion.__name__: OpenAIChatCompletion(config.openai["keys"]),
+    }
     scheduler = Scheduler(engines)
 
     globalObject.text = text

@@ -50,6 +50,13 @@ class Unauthorized(ChatGPTSessionError):
         pass
 
 
+class NoResource(ChatGPTSessionError):
+    HttpStatus = http.HTTPStatus.PAYMENT_REQUIRED
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+
 class NotImplementedError1(ChatGPTSessionError):
     HttpStatus = http.HTTPStatus.NOT_IMPLEMENTED
 

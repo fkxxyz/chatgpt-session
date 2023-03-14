@@ -93,7 +93,7 @@ cmd_sendi() {
     echo "$result"
     return "$exit_code"
   fi
-  watch -et -n 0.1 "$0" geti <<< '' || true
+  watch -et -n 0.1 "$0" geti "$id" <<< '' || true
   cmd_get "$id"
 }
 
@@ -147,9 +147,9 @@ cmd_getl() {
 }
 
 cmd_geti() {
-  local mid="$1"
+  local id="$1"
   local result
-  result="$("$0" get "$mid")"
+  result="$("$0" get "$id")"
   local lines
   lines="$(cmd_getl <<< "$result")"
   cat <<< "$result" | tail "-$lines"

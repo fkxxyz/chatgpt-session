@@ -2,6 +2,7 @@ import copy
 from dataclasses import dataclass
 from typing import List
 
+import engine.openai_chat
 from tokenizer import token_len
 
 
@@ -12,6 +13,7 @@ class EnginePointer:
     fulled: bool
     memo: str
     uninitialized: bool
+    ai_index: int
     pointer: dict
 
 
@@ -24,6 +26,16 @@ class Message:
 
     AI = 0
     USER = 1
+    __openai_chat_role = {
+        AI: engine.openai_chat.Message.ASSISTANT,
+        USER: engine.openai_chat.Message.USER,
+    }
+
+    def to_openai_chat(self) -> engine.openai_chat.Message:
+        return engine.openai_chat.Message(
+            Message.__openai_chat_role[self.sender],
+            self.content,
+        )
 
 
 @dataclass
@@ -42,7 +54,7 @@ class CurrentConversation:
             memo,
             recent_history,
             [],
-            EnginePointer("", "", False, "", len(memo) != 0, {}),
+            EnginePointer("", "", False, "", len(memo) != 0, 0, {}),
             token_len(guide) + 1,
         )
 
