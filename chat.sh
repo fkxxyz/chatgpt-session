@@ -21,6 +21,17 @@ cmd_list() {
   jq -r '.' <<< "$json_str"
 }
 
+cmd_info() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/info?id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
 cmd_create() {
   local id="$1"
   local type="$2"
@@ -198,6 +209,7 @@ cmd_help(){
 
 Commands:
   list
+  info [id]
   create <id> <type> <<< <params>
   delete <id>
   status [id]

@@ -27,6 +27,17 @@ def handle_list():
     return flask.jsonify(result)
 
 
+@app.route('/api/info')
+def handle_info():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+
+    info = session.asdict()
+    return flask.jsonify(info)
+
+
 @app.route('/api/create', methods=['PUT'])
 def handle_create():
     id_ = flask.request.args.get('id')
@@ -81,9 +92,12 @@ def get_session_query(id_: str) -> (Session, flask.Response | None):
         if session is None:
             return None, flask.make_response('error: no sessions', http.HTTPStatus.BAD_REQUEST)
         return session, None
-    session = globalObject.session_manager.get(id_)
+    try:
+        session = globalObject.session_manager.get(id_)
+    except error.ChatGPTSessionError as err:
+        return None, flask.make_response(f'error: get session: {id_}: {str(err)}', http.HTTPStatus.BAD_REQUEST)
     if session is None:
-        return None, flask.make_response(f'error: no such session: {session}', http.HTTPStatus.BAD_REQUEST)
+        return None, flask.make_response(f'error: no such session: {id_}', http.HTTPStatus.BAD_REQUEST)
     return session, None
 
 
