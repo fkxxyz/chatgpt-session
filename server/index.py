@@ -139,6 +139,24 @@ def handle_history():
     return flask.jsonify(messages_)
 
 
+@app.route('/api/remark', methods=['GET', 'PUT'])
+def handle_remark():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+
+    if flask.request.method == 'GET':
+        remark = session.get_remark()
+    else:
+        remark = flask.request.get_json()
+        try:
+            session.set_remark(remark)
+        except error.ChatGPTSessionError as e:
+            return flask.make_response(str(e), e.HttpStatus)
+    return flask.jsonify(remark)
+
+
 @app.route('/api/compress', methods=['PATCH'])
 def handle_compress():
     id_ = flask.request.args.get('id')

@@ -39,3 +39,16 @@ class SessionStorage:
 
         self.current = current
         self.save()
+
+    def load_remark(self) -> dict:
+        try:
+            with open(os.path.join(self.__path, "remark.json"), "r") as f:
+                current_str = f.read()
+        except FileNotFoundError:
+            return {}
+        return json.loads(current_str)
+
+    def save_remark(self, remark: dict):
+        remark_str = json.dumps(remark, ensure_ascii=False, indent=2)
+        with open(os.path.join(self.__path, "remark.json"), "w") as f:
+            f.write(remark_str)

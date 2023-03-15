@@ -308,6 +308,12 @@ class Session:
             else:
                 return self.__storage.current.messages
 
+    def get_remark(self) -> dict:
+        return self.__storage.load_remark()
+
+    def set_remark(self, remark: dict):
+        self.__storage.save_remark(remark)
+
     def __on_send(self):
         self.__logger.info("__on_send() enter")
 

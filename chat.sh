@@ -83,6 +83,17 @@ cmd_history() {
   jq -r '.' <<< "$json_str"
 }
 
+cmd_remark() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/remark?id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
 cmd_compress() {
   local id="$1"
   local json_str exit_code=0
@@ -190,6 +201,7 @@ Commands:
   create <id> <type> <<< <params>
   delete <id>
   status [id]
+  remark [id]
   compress [id]
   send [id]
   get [id]
