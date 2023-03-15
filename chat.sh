@@ -67,7 +67,33 @@ cmd_status() {
     "GENERATING"
     "INITIALIZING"
   )
-  printf '%s\n' "${status[i]}"
+  local tokens
+  tokens="$(jq -r '.tokens' <<< "$json_str")"
+  printf '%s %s\n' "${status[i]}" "$tokens"
+}
+
+cmd_history() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/history?id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
+cmd_compress() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(
+    curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
+      -X PATCH --data-binary "$params" "$BASE_URL/api/compress?id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
 }
 
 cmd_send() {
@@ -163,6 +189,8 @@ Commands:
   list
   create <id> <type> <<< <params>
   delete <id>
+  status [id]
+  compress [id]
   send [id]
   get [id]
   sendi [id]

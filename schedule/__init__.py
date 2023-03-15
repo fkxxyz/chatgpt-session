@@ -108,11 +108,12 @@ class Scheduler:
             accounts.append(account)
 
         # 如果不是新创建会话，则不改变账户
-        if not pointer.uninitialized and pointer.engine == RevChatGPTWeb.__name__ and accounts_found:
+        if pointer.initialized and pointer.engine == RevChatGPTWeb.__name__ and accounts_found:
+            assert len(pointer.account) != 0
             return pointer.engine, pointer.account
 
         if len(accounts_dict) > 0:
-            if pointer.uninitialized or pointer.engine != RevChatGPTWeb.__name__:
+            if not pointer.initialized or pointer.engine != RevChatGPTWeb.__name__:
                 # 如果是新创建的会话，则选择负载最低的账户
                 accounts.sort(key=account_load)
                 return RevChatGPTWeb.__name__, accounts[0].id
@@ -132,7 +133,7 @@ class Scheduler:
                     api, current.pointer.account, current.pointer.pointer["compress"],
                     current.pointer.pointer["id"], current.pointer.pointer["mid"],
                 )
-            elif current.pointer.uninitialized or len(current.messages) == 0:
+            elif not current.pointer.initialized or len(current.messages) == 0:
                 # 第一次发送消息，需要新建会话，发送 guide
                 mid = rev_chatgpt_web_send(api, current.pointer.account, current.guide)
 
@@ -171,7 +172,7 @@ class Scheduler:
                     engine.openai_chat.Message.USER,
                     current.pointer.pointer["compress"],
                 ))
-            elif current.pointer.uninitialized or len(current.messages) == 0:
+            elif not current.pointer.initialized or len(current.messages) == 0:
                 pass
             else:
                 # 非第一次发送消息
@@ -190,7 +191,7 @@ class Scheduler:
             if pointer.fulled:
                 new_message = GetMessageResponse.from_body(
                     call_until_success(lambda: api.get(pointer.pointer["memo_mid"])))
-            elif pointer.uninitialized:
+            elif not pointer.initialized and "inherited_mid" in pointer.pointer:
                 new_message = GetMessageResponse.from_body(
                     call_until_success(lambda: api.get(pointer.pointer["inherited_mid"])))
             else:

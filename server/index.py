@@ -110,8 +110,45 @@ def handle_status():
         return r
 
     try:
-        status = session.status()
+        status, tokens = session.status()
     except error.ChatGPTSessionError as e:
         return flask.make_response(str(e), e.HttpStatus)
 
-    return flask.jsonify({"status": status})
+    return flask.jsonify({
+        "status": status,
+        "tokens": tokens,
+    })
+
+
+@app.route('/api/history')
+def handle_history():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+
+    try:
+        messages = session.history()
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+
+    messages_ = []
+    for message in messages:
+        messages_.append(asdict(message))
+
+    return flask.jsonify(messages_)
+
+
+@app.route('/api/compress', methods=['PATCH'])
+def handle_compress():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+
+    try:
+        session.force_compress()
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+
+    return flask.jsonify({})

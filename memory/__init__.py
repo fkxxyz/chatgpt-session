@@ -12,13 +12,14 @@ class EnginePointer:
     account: str
     fulled: bool
     memo: str
-    uninitialized: bool
+    initialized: bool
     ai_index: int
     pointer: dict
 
 
 @dataclass
 class Message:
+    mid: str
     sender: int
     content: str
     tokens: int
@@ -54,7 +55,7 @@ class CurrentConversation:
             memo,
             recent_history,
             [],
-            EnginePointer("", "", False, "", len(memo) != 0, 0, {}),
+            EnginePointer("", "", False, "", False, 0, {}),
             token_len(guide) + 1,
         )
 

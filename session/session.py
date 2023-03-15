@@ -20,6 +20,7 @@ from tokenizer import token_len
 
 @dataclass
 class SessionMessageResponse:
+    mid: str
     msg: str
     end: bool
 
@@ -84,7 +85,7 @@ class Session:
                 self.__compress()
             else:
                 self.__replace()
-        elif self.__storage.current.pointer.uninitialized:
+        elif not self.__storage.current.pointer.initialized and len(self.__storage.current.memo) != 0:
             self.__inherit()
         elif len(self.__storage.current.messages) == 0 or self.__storage.current.messages[-1].sender == Message.USER:
             self.send()  # 消息为空或者最后一条消息是用户消息，需要AI回复
@@ -123,9 +124,12 @@ class Session:
             "params": self.params,
         }
 
-    def status(self) -> int:
+    def status(self) -> (int, int):
         with self.__worker_lock:
-            return self.__status
+            if self.__storage.current is None:
+                return self.__status, 0
+            else:
+                return self.__status, self.__storage.current.tokens
 
     def __create(self):
         self.__logger.info("put command CREATE")
@@ -189,9 +193,28 @@ class Session:
 
             assert self.__command == Session.__NONE  # 确保命令为空
             assert self.__storage.current is not None  # 确保有数据
-            assert self.__storage.current.pointer.uninitialized  # 确保需要继承
+            assert not self.__storage.current.pointer.initialized  # 确保需要继承
+            assert len(self.__storage.current.memo) != 0  # 确保需要继承
 
             self.__command = Session.__INHERIT
+            self.__status = Session.__INITIALIZING
+            self.__worker_cond.notify_all()
+
+    def force_compress(self):
+        self.__logger.info("put command COMPRESS (force)")
+        with self.__worker_lock:
+            while self.__status != Session.__IDLE:  # 确保空闲状态
+                self.__worker_cond.wait()
+            while not self.__writeable():
+                self.__worker_cond.wait()
+
+            assert self.__command == Session.__NONE  # 确保命令为空
+            assert self.__storage.current is not None  # 确保有数据
+            assert len(self.__storage.current.pointer.memo) == 0  # 确保没有备忘录
+
+            self.__storage.current.pointer.fulled = True
+
+            self.__command = Session.__COMPRESS
             self.__status = Session.__INITIALIZING
             self.__worker_cond.notify_all()
 
@@ -241,26 +264,26 @@ class Session:
             new_mid = pointer.pointer.get("new_mid")
             if new_mid is None:
                 if len(messages) == 0:
-                    return SessionMessageResponse("", True)
+                    return SessionMessageResponse("", "", True)
                 elif messages[-1].sender == Message.AI:
-                    return SessionMessageResponse(messages[-1].content, True)
+                    return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
                 else:
-                    return SessionMessageResponse("", False)
+                    return SessionMessageResponse("", "", False)
             mid = pointer.pointer.get("mid")
             if mid == new_mid:
                 assert len(messages) != 0
                 if messages[-1].sender == Message.AI:
-                    return SessionMessageResponse(messages[-1].content, True)
+                    return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
                 else:
-                    return SessionMessageResponse("", False)
+                    return SessionMessageResponse("", "", False)
             new_message = self.__scheduler.get(pointer)
-            return SessionMessageResponse(new_message.msg, new_message.end)
+            return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
         elif pointer.engine == OpenAIChatCompletion.__name__:
             if len(messages) == 0:
-                return SessionMessageResponse("", True)
+                return SessionMessageResponse("", "", True)
             if messages[-1].sender == Message.AI:
-                return SessionMessageResponse(messages[-1].content, True)
-            return SessionMessageResponse("", False)
+                return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+            return SessionMessageResponse("", "", False)
 
     def append_msg(self, msg: str):
         with self.__worker_lock:
@@ -271,12 +294,19 @@ class Session:
 
             assert self.__command == Session.__NONE  # 确保命令为空
             assert self.__storage.current.messages[-1].sender == Message.AI  # 确保最后一条消息是AI的消息
-            self.__storage.current.append_message(Message(Message.USER, msg, token_len(msg), {}))  # 将要发送的消息追加到最后
+            self.__storage.current.append_message(Message("", Message.USER, msg, token_len(msg), {}))  # 将要发送的消息追加到最后
             self.__storage.save()  # 保存到磁盘
 
             self.__command = Session.__SEND
             self.__status = Session.__GENERATING
             self.__worker_cond.notify_all()
+
+    def history(self) -> List[Message]:
+        with self.__worker_lock:
+            if self.__storage.current is None:
+                return []
+            else:
+                return self.__storage.current.messages
 
     def __on_send(self):
         self.__logger.info("__on_send() enter")
@@ -320,7 +350,7 @@ class Session:
                 while self.__writing or self.__reading_num > 1:
                     self.__worker_cond.wait()
                 self.__storage.current.pointer.ai_index = len(self.__storage.current.messages)
-                self.__storage.current.append_message(Message(Message.AI, reply, token_len(reply), {}))
+                self.__storage.current.append_message(Message("", Message.AI, reply, token_len(reply), {}))
                 if self.__storage.current.tokens >= 2048:
                     self.__storage.current.pointer.fulled = True
                 self.__storage.save()
@@ -346,11 +376,11 @@ class Session:
             with self.__worker_lock:
                 while self.__writing or self.__reading_num > 1:
                     self.__worker_cond.wait()
-                self.__storage.current.append_message(Message(Message.AI, new_message.msg, token_len(new_message.msg), {
-                    "mid": new_message.mid,
-                }))
+                self.__storage.current.append_message(
+                    Message(new_message.mid, Message.AI, new_message.msg, token_len(new_message.msg), {}))
                 self.__storage.current.pointer.pointer["id"] = new_message.id
                 self.__storage.current.pointer.pointer["mid"] = new_message.mid
+                self.__storage.current.pointer.initialized = True
                 if self.__storage.current.tokens >= 2048:
                     self.__storage.current.pointer.fulled = True
                 self.__storage.save()
@@ -468,7 +498,7 @@ class Session:
                     self.__worker_cond.wait()
                 self.__storage.current.pointer.engine = engine
                 self.__storage.current.pointer.account = account
-                self.__storage.current.pointer.uninitialized = False
+                self.__storage.current.pointer.initialized = False
                 self.__storage.save()
         if self.__storage.current.pointer.engine == RevChatGPTWeb.__name__:
             mid = reply
@@ -496,7 +526,7 @@ class Session:
                 self.__storage.current.pointer.account = account
                 self.__storage.current.pointer.pointer["id"] = new_message.id
                 self.__storage.current.pointer.pointer["mid"] = new_message.mid
-                self.__storage.current.pointer.uninitialized = False
+                self.__storage.current.pointer.initialized = True
                 self.__storage.current.tokens += new_tokens + 1
                 self.__storage.save()
 
