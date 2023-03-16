@@ -181,6 +181,7 @@ class Session:
 
             self.__command = Session.__INHERIT
             self.__status = Session.__INITIALIZING
+            self.__reading_num += 1
             self.__worker_cond.notify_all()
 
     def __inherit(self):
@@ -198,6 +199,7 @@ class Session:
 
             self.__command = Session.__INHERIT
             self.__status = Session.__INITIALIZING
+            self.__reading_num += 1
             self.__worker_cond.notify_all()
 
     def force_compress(self):
@@ -279,6 +281,12 @@ class Session:
             new_message = self.__scheduler.get(pointer)
             return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
         elif pointer.engine == OpenAIChatCompletion.__name__:
+            if len(messages) == 0:
+                return SessionMessageResponse("", "", True)
+            if messages[-1].sender == Message.AI:
+                return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+            return SessionMessageResponse("", "", False)
+        else:
             if len(messages) == 0:
                 return SessionMessageResponse("", "", True)
             if messages[-1].sender == Message.AI:
@@ -473,10 +481,6 @@ class Session:
 
     def __on_inherit(self):
         self.__logger.info("__on_inherit() enter")
-        with self.__worker_lock:
-            while not self.__writeable():
-                self.__worker_cond.wait()
-            self.__reading_num += 1
 
         while True:
             # 先评估在哪个引擎哪个帐号处理信息
