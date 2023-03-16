@@ -134,6 +134,21 @@ def handle_status():
     })
 
 
+@app.route('/api/memo')
+def handle_memo():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+
+    try:
+        memo = session.memo()
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+
+    return memo
+
+
 @app.route('/api/history')
 def handle_history():
     id_ = flask.request.args.get('id')

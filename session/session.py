@@ -309,6 +309,13 @@ class Session:
             self.__status = Session.__GENERATING
             self.__worker_cond.notify_all()
 
+    def memo(self) -> str:
+        with self.__worker_lock:
+            if self.__storage.current is None:
+                return ""
+            else:
+                return self.__storage.current.memo
+
     def history(self) -> List[Message]:
         with self.__worker_lock:
             if self.__storage.current is None:

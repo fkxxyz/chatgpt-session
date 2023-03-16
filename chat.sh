@@ -83,6 +83,12 @@ cmd_status() {
   printf '%s %s\n' "${status[i]}" "$tokens"
 }
 
+cmd_memo() {
+  local id="$1"
+  local json_str exit_code=0
+  curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/memo?id=${id}"
+}
+
 cmd_history() {
   local id="$1"
   local json_str exit_code=0
@@ -213,6 +219,7 @@ Commands:
   create <id> <type> <<< <params>
   delete <id>
   status [id]
+  memo [id]
   remark [id]
   compress [id]
   send [id]
