@@ -42,7 +42,7 @@ class SessionText:
         if len(old_memo) == 0:
             prompt = self.t_compress
         else:
-            prompt = self.t_compress2
+            prompt = self.t_compress
         for key in params:
             prompt = prompt.replace("${" + key + "}", params[key])
         if len(old_memo) != 0:

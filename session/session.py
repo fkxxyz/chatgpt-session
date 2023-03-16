@@ -473,11 +473,14 @@ class Session:
                 time.sleep(0.1)
             reply = new_message.msg
 
+        # 得到备忘录，确保备忘录格式正确
+        memo = "```\n" + reply.strip("`\n") + "\n```"
+
         # 将备忘录记录
         with self.__worker_lock:
             while self.__writing or self.__reading_num > 1:
                 self.__worker_cond.wait()
-            self.__storage.current.pointer.memo = reply
+            self.__storage.current.pointer.memo = memo
             self.__storage.save()
 
         # 备忘录记录完了，进入继承状态
