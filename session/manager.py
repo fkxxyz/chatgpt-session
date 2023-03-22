@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import os
 import shutil
@@ -47,6 +48,8 @@ class SessionManager:
     def __load_sessions(self):
         try:
             for id_ in os.listdir(self.__database):
+                if id_.startswith("."):
+                    continue
                 session_path = os.path.join(self.__database, id_)
                 if not os.path.isdir(session_path):
                     continue
@@ -126,7 +129,8 @@ class SessionManager:
         self.__lock.acquire()
         try:
             del self.__sessions[id_]
-            shutil.rmtree(os.path.join(self.__database, id_))
+            suffix = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+            os.rename(os.path.join(self.__database, id_), os.path.join(self.__database, f".{id_}.{suffix}"))
         except FileNotFoundError:
             raise error.InvalidParamError(f"no such session: {id_}")
         except OSError as e:
