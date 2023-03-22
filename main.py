@@ -2,23 +2,21 @@
 # -*- encoding:utf-8 -*-
 
 import argparse
-import json
 import logging
-import os
 import sys
-
-import openai
-
-from config import Config
-from engine.openai_chat import OpenAIChatCompletion
-from engine.rev_chatgpt_web import RevChatGPTWeb
-from schedule import Scheduler
-from server import app
-from server.common import globalObject
-from session.manager import SessionManager
 
 
 def run(host: str, port: int, text: str, config_path: str, database: str):
+    import os
+    import openai
+
+    from config import Config
+    from engine.openai_chat import OpenAIChatCompletion
+    from engine.rev_chatgpt_web import RevChatGPTWeb
+    from schedule import Scheduler
+    from server import app
+    from server.common import globalObject
+    from session.manager import SessionManager
     os.makedirs(database, exist_ok=True)
 
     config = Config.from_file(config_path)

@@ -21,10 +21,10 @@ class SessionText:
                 self.t_create: str = f.read()
 
             # 压缩需要的提示
-            with open(os.path.join(d, "compress.txt"), "r") as f:
-                self.t_compress: str = f.read()
-            with open(os.path.join(d, "compress2.txt"), "r") as f:
-                self.t_compress2: str = f.read()
+            with open(os.path.join(d, "summary.txt"), "r") as f:
+                self.t_summary: str = f.read()
+            with open(os.path.join(d, "merge.txt"), "r") as f:
+                self.t_merge: str = f.read()
 
             # 继承需要的提示
             with open(os.path.join(d, "inherit.txt"), "r") as f:
@@ -38,15 +38,15 @@ class SessionText:
             guide = guide.replace("${" + key + "}", params[key])
         return guide
 
-    def compress(self, params: dict, old_memo: str) -> str:
-        if len(old_memo) == 0:
-            prompt = self.t_compress
-        else:
-            prompt = self.t_compress
+    def summary(self) -> str:
+        return self.t_summary
+
+    def merge(self, params: dict, memo: str, summary: str) -> str:
+        prompt = self.t_merge
         for key in params:
             prompt = prompt.replace("${" + key + "}", params[key])
-        if len(old_memo) != 0:
-            prompt = prompt.replace("${memo}", old_memo)
+        prompt = prompt.replace("${memo}", memo)
+        prompt = prompt.replace("${summary}", summary)
         return prompt
 
     def inherit(self, params: dict, memo: str, history: str) -> str:

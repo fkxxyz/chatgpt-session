@@ -1,6 +1,6 @@
 Hello, I am ${name}. (Please communicate with me in Chinese unless I specifically request otherwise, and don't repeat tell me you can communicate with me in Chinese)
 
-The following is your memo (memo is written in the first person, "I" in the memo refers to you and "you" refers to me):
+The following is your memo (memo is written in the first person, "I" in the memo refers to you and "user" refers to me):
 ${memo}
 
 The following is our recent chat history:

@@ -26,12 +26,12 @@ class OpenAIChatCompletion:
         if not self.available():
             raise error.NoResource()
 
-        openai.api_key = self.__keys[self.__index]
         messages_ = []
         for message in messages:
             messages_.append(asdict(message))
 
         while self.available():
+            openai.api_key = self.__keys[self.__index]
             try:
                 completion = openai.ChatCompletion.create(model=model, messages=messages_)
             except AuthenticationError as err:

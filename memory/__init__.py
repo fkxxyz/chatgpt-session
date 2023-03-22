@@ -8,13 +8,43 @@ from tokenizer import token_len
 
 @dataclass
 class EnginePointer:
-    engine: str
-    account: str
-    fulled: bool
-    memo: str
-    initialized: bool
-    ai_index: int
-    pointer: dict
+    # 引擎
+    engine: str = ""
+
+    # 帐号
+    account: str = ""
+
+    # 状态
+    status: int = 0
+    UNINITIALIZED = 0  # 未初始化的（刚创建或刚替换）
+    IDLE = 1  # 空闲，可接收消息
+    FULLED = 2  # token 数量已满（无法再接收新消息，接下来需要总结）
+    SUMMARIZED = 3  # 总结完毕（无法再接收新消息，接下来需要合并）
+    MERGED = 4  # 合并完毕（无法再接收新消息，接下来需要替换、继承）
+
+    # 总结出的临时备忘录
+    summary: str = ""
+
+    # 总结出的备忘录
+    memo: str = ""
+
+    # AI 最后回复的消息的下标
+    ai_index: int = 0
+
+    # 标题（仅用于网页版）
+    title: str = ""
+
+    # 会话 id （仅网页版，如果该字段被设置，那么表示已被初始化）
+    id: str = ""
+
+    # 消息 id （仅网页版，指向 AI 回复的最后一个消息的 id）
+    mid: str = ""
+
+    # 新消息 id （仅网页版，指向 AI 正在回复的消息的 id）
+    new_mid: str = ""
+
+    # 提示
+    prompt: str = ""
 
 
 @dataclass
@@ -55,7 +85,7 @@ class CurrentConversation:
             memo,
             recent_history,
             [],
-            EnginePointer("", "", False, "", False, 0, {}),
+            EnginePointer(),
             token_len(guide) + 1,
         )
 

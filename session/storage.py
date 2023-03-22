@@ -11,7 +11,7 @@ class SessionStorage:
         self.__path: str = d
         self.__session_type: str = type_
         self.__params: dict = params
-        self.current: CurrentConversation = None
+        self.current: CurrentConversation | None = None
 
     def load(self) -> bool:
         try:

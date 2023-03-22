@@ -48,6 +48,8 @@ sleep_strategies = {
     500: SleepStrategy(10000, 2, 120000),
     503: SleepStrategy(10000, 2, 120000),
     522: SleepStrategy(10000, 2, 120000),
+    524: SleepStrategy(10000, 2, 60000),
+    529: SleepStrategy(10000, 2, 60000),
 }
 
 
@@ -108,12 +110,12 @@ class Scheduler:
             accounts.append(account)
 
         # 如果不是新创建会话，则不改变账户
-        if pointer.initialized and pointer.engine == RevChatGPTWeb.__name__ and accounts_found:
+        if pointer.status != EnginePointer.UNINITIALIZED and pointer.engine == RevChatGPTWeb.__name__ and accounts_found:
             assert len(pointer.account) != 0
             return pointer.engine, pointer.account
 
         if len(accounts_dict) > 0:
-            if not pointer.initialized or pointer.engine != RevChatGPTWeb.__name__:
+            if pointer.status == EnginePointer.UNINITIALIZED or pointer.engine != RevChatGPTWeb.__name__:
                 # 如果是新创建的会话，则选择负载最低的账户
                 accounts.sort(key=account_load)
                 return RevChatGPTWeb.__name__, accounts[0].id
@@ -126,14 +128,8 @@ class Scheduler:
         if current.pointer.engine == RevChatGPTWeb.__name__:
             # 使用网页版的免费 ChatGPT
             api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
-            if current.pointer.fulled:
-                # 总 token 已满，需要压缩
-                assert current.messages[-1].sender == Message.AI  # 最后一条消息必须是 AI
-                mid = rev_chatgpt_web_send(
-                    api, current.pointer.account, current.pointer.pointer["compress"],
-                    current.pointer.pointer["id"], current.pointer.pointer["mid"],
-                )
-            elif not current.pointer.initialized or len(current.messages) == 0:
+
+            if current.pointer.status == EnginePointer.UNINITIALIZED:
                 # 第一次发送消息，需要新建会话，发送 guide
                 mid = rev_chatgpt_web_send(api, current.pointer.account, current.guide)
 
@@ -142,15 +138,22 @@ class Scheduler:
                 call_until_success(lambda: api.set_title(
                     current.pointer.account,
                     new_message.id,
-                    current.pointer.pointer["title"],
+                    current.pointer.title,
                 ))
-            else:
+            elif current.pointer.status == EnginePointer.IDLE:
                 # 非第一次发送消息，发送最后一条消息即可
                 last_message = current.messages[-1]
                 assert last_message.sender == Message.USER  # 最后一条消息必须是用户
                 mid = rev_chatgpt_web_send(
                     api, current.pointer.account, last_message.content,
-                    current.pointer.pointer["id"], current.pointer.pointer["mid"],
+                    current.pointer.id, current.pointer.mid,
+                )
+            else:
+                # 总 token 已满，需要压缩
+                assert current.messages[-1].sender == Message.AI  # 最后一条消息必须是 AI
+                mid = rev_chatgpt_web_send(
+                    api, current.pointer.account, current.pointer.prompt,
+                    current.pointer.id, current.pointer.mid,
                 )
 
             return mid
@@ -165,18 +168,13 @@ class Scheduler:
             for message in current.messages:
                 messages.append(message.to_openai_chat())
 
-            if current.pointer.fulled:
+            if current.pointer.status >= EnginePointer.IDLE:
                 # 总 token 已满，需要压缩
                 assert current.messages[-1].sender == Message.AI  # 最后一条消息必须是 AI
                 messages.append(engine.openai_chat.Message(
                     engine.openai_chat.Message.USER,
-                    current.pointer.pointer["compress"],
+                    current.pointer.prompt,
                 ))
-            elif not current.pointer.initialized or len(current.messages) == 0:
-                pass
-            else:
-                # 非第一次发送消息
-                pass
             return openai_chat_send(api, messages)
         else:
             raise error.NotImplementedError1(f"no such engine: f{current.pointer.engine}")
@@ -188,15 +186,8 @@ class Scheduler:
             # 使用网页版的免费 ChatGPT
             api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
 
-            if pointer.fulled:
-                new_message = GetMessageResponse.from_body(
-                    call_until_success(lambda: api.get(pointer.pointer["memo_mid"])))
-            elif not pointer.initialized and "inherited_mid" in pointer.pointer:
-                new_message = GetMessageResponse.from_body(
-                    call_until_success(lambda: api.get(pointer.pointer["inherited_mid"])))
-            else:
-                new_message = GetMessageResponse.from_body(
-                    call_until_success(lambda: api.get(pointer.pointer["new_mid"])))
+            new_message = GetMessageResponse.from_body(
+                call_until_success(lambda: api.get(pointer.new_mid)))
         elif pointer.engine == OpenAIChatCompletion.__name__:
             raise error.NotImplementedError1(f"get() not support engine: f{pointer.engine}")
         else:

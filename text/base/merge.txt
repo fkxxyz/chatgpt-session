@@ -1,0 +1,3 @@
+Merge the following two memos, remove duplicate information, and make sure the final memo does not exceed 1000 words. Please do not reply to this message, simply enclose the contents of the new memo in triple backticks using the provided memo format:
+${memo}
+${summary}
