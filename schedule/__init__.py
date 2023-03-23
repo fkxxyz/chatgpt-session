@@ -53,6 +53,34 @@ sleep_strategies = {
 }
 
 
+def rev_chatgpt_web_history(api: RevChatGPTWeb, account: str, id_: str) -> dict:
+    wait_ms = 0
+    while True:
+        try:
+            resp = api.history(account, id_)
+        except requests.RequestException:
+            time.sleep(10)
+            continue
+        if resp.status_code == http.HTTPStatus.OK:
+            return json.loads(resp.content)
+        sleep_strategy = sleep_strategies.get(resp.status_code)
+        if sleep_strategy is None:
+            if resp.status_code == http.HTTPStatus.UNAUTHORIZED:
+                raise error.Unauthorized(resp.content)
+            if resp.status_code == http.HTTPStatus.TOO_MANY_REQUESTS:
+                raise error.ServerIsBusy(resp.content)
+            raise error.InternalError(resp.status_code, resp.content)
+        if wait_ms == 0:
+            wait_ms = sleep_strategy.start
+        else:
+            wait_ms *= sleep_strategy.growth
+        if wait_ms > sleep_strategy.upper:
+            wait_ms = sleep_strategy.upper
+        print(f"get history 错误 {resp.status_code}： {resp.content.decode()}")
+        print(f"等待 {wait_ms} 毫秒后重试 ...")
+        time.sleep(float(wait_ms) / 1000)
+
+
 def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = '', mid: str = '') -> str:
     wait_ms = 0
     while True:
@@ -64,6 +92,18 @@ def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = 
         if resp.status_code == http.HTTPStatus.OK:
             r = SendResponse(**json.loads(resp.content))
             return r.mid
+        if resp.status_code == http.HTTPStatus.NOT_ACCEPTABLE:
+            # Something went wrong
+            # 需要重新加载会话
+            print(f"send 未知错误，需要重新加载会话")
+            history = rev_chatgpt_web_history(api, account, id_)
+            current_node = history["mapping"][history["current_node"]]
+            if current_node["message"]["author"]["role"] == "user":
+                mid = current_node["parent"]
+            else:
+                mid = current_node["id"]
+            print(f"重新加载会话成功，得到新的 mid： {mid}")
+            continue
         sleep_strategy = sleep_strategies.get(resp.status_code)
         if sleep_strategy is None:
             if resp.status_code == http.HTTPStatus.UNAUTHORIZED:

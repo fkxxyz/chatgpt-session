@@ -62,3 +62,10 @@ class NotImplementedError1(ChatGPTSessionError):
 
     def __init__(self, *args, **kwargs):
         pass
+
+
+class NotAcceptable(ChatGPTSessionError):
+    HttpStatus = http.HTTPStatus.NOT_ACCEPTABLE
+
+    def __init__(self, *args, **kwargs):
+        pass
