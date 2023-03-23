@@ -10,19 +10,6 @@ from session.session.internal import SessionInternal
 from tokenizer import token_len
 
 
-# 将最近聊天记录转换为字符串
-def messages_str(messages: List[Message], start: int = 0, end: int = None) -> str:
-    if end is None:
-        end = len(messages)
-    s = ""
-    for i in range(start, end):
-        if messages[i].sender == Message.AI:
-            s += 'You: ' + messages[i].content + "\n"
-        if messages[i].sender == Message.USER:
-            s += 'Me: ' + messages[i].content + "\n"
-    return s
-
-
 # 精简消息，如果消息的 token 大于 384，则把第100个字符到倒数100个字符之间的内容替换为省略号
 def prune_message(message: Message) -> str:
     if token_len(message.content) <= 384:
@@ -31,7 +18,7 @@ def prune_message(message: Message) -> str:
 
 
 # 获取最近消息，每两条消息为一组，返回尽可能多的 token 不超过 1024 的最晚的精简过的消息
-def recent_history(current: CurrentConversation) -> (str, List[Message]):
+def recent_history(current: CurrentConversation) -> List[Message]:
     messages = deepcopy(current.messages)
 
     token = 0
@@ -47,7 +34,7 @@ def recent_history(current: CurrentConversation) -> (str, List[Message]):
             break
     i += 2
     assert i <= len(messages) - 2  # 确保至少有两条消息
-    return messages_str(messages, i, len(messages)), messages[i:]
+    return messages[i:]
 
 
 def create(self: SessionInternal):
@@ -87,7 +74,10 @@ def replace(self: SessionInternal):
 
         # 生引导语
         memo = self.storage.current.pointer.memo
-        history, messages = recent_history(self.storage.current)
+        messages = recent_history(self.storage.current)
+        history = ""
+        for i in range(len(messages)):
+            history += self.texts[self.type].message(messages[i], self.params)
         guide = self.texts[self.type].inherit(self.params, memo, history)
 
         # 处理旧的 messages 备注

@@ -1,11 +1,29 @@
 import json
 import os
+from dataclasses import dataclass
+from typing import List
 
 import error
+from memory import Message
+
+
+@dataclass
+class Rule:
+    sender: List[str]
+    message: str
 
 
 class SessionText:
     def __init__(self, d: str):
+        # 规则
+        try:
+            with open(os.path.join(d, "rule.json"), "r") as f:
+                self.rule: Rule = Rule(**json.loads(f.read()))
+        except FileNotFoundError:
+            raise error.InvalidParamError(f"no such text {d}")
+        except json.JSONDecodeError as e:
+            raise error.InternalError(f"invalid text rule.json in {d}: {e}")
+
         # 参数
         try:
             with open(os.path.join(d, "params.json"), "r") as f:
@@ -56,3 +74,13 @@ class SessionText:
         guide = guide.replace("${memo}", memo)
         guide = guide.replace("${history}", history)
         return guide
+
+    def message(self, message: Message, params: dict) -> str:
+        result = self.rule.message
+        result = result.replace("${sender}", self.rule.sender[message.sender])
+        for key in params:
+            result = result.replace("${" + key + "}", params[key])
+        for key in message.remark:
+            result = result.replace("${" + key + "}", message.remark[key])
+        result = result.replace("${content}", message.content)
+        return result
