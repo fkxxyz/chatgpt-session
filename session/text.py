@@ -1,28 +1,20 @@
+import importlib
 import json
 import os
-from dataclasses import dataclass
-from typing import List
+from copy import deepcopy
+from typing import List, Any
+import importlib.util
 
 import error
 from memory import Message
 
 
-@dataclass
-class Rule:
-    sender: List[str]
-    message: str
-
-
 class SessionText:
     def __init__(self, d: str):
         # 规则
-        try:
-            with open(os.path.join(d, "rule.json"), "r") as f:
-                self.rule: Rule = Rule(**json.loads(f.read()))
-        except FileNotFoundError:
-            raise error.InvalidParamError(f"no such text {d}")
-        except json.JSONDecodeError as e:
-            raise error.InternalError(f"invalid text rule.json in {d}: {e}")
+        spec = importlib.util.spec_from_file_location("rule", os.path.join(d, "rule.py"))
+        self.rule: Any = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.rule)
 
         # 参数
         try:
@@ -75,12 +67,5 @@ class SessionText:
         guide = guide.replace("${history}", history)
         return guide
 
-    def message(self, message: Message, params: dict) -> str:
-        result = self.rule.message
-        result = result.replace("${sender}", self.rule.sender[message.sender])
-        for key in params:
-            result = result.replace("${" + key + "}", params[key])
-        for key in message.remark:
-            result = result.replace("${" + key + "}", message.remark[key])
-        result = result.replace("${content}", message.content)
-        return result
+    def compile_history(self, messages: List[Message], params: dict) -> (str, List[Message]):
+        return self.rule.compile_history(deepcopy(messages), deepcopy(params))

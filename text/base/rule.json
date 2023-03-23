@@ -1,7 +1,0 @@
-{
-  "sender": [
-    "You",
-    "Me"
-  ],
-  "message": "${sender}: ${content}\n"
-}

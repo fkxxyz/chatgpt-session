@@ -33,6 +33,8 @@ class SessionManager:
     def __load_text(self):
         try:
             for type_ in os.listdir(self.__text_path):
+                if type_.startswith("."):
+                    continue
                 text_path = os.path.join(self.__text_path, type_)
                 if not os.path.isdir(text_path):
                     continue

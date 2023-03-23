@@ -1,40 +1,11 @@
 import time
-from copy import deepcopy
-from typing import List
 
 import error
 from engine.openai_chat import OpenAIChatCompletion
 from engine.rev_chatgpt_web import RevChatGPTWeb
-from memory import CurrentConversation, Message, EnginePointer
+from memory import CurrentConversation, EnginePointer
 from session.session.internal import SessionInternal
 from tokenizer import token_len
-
-
-# 精简消息，如果消息的 token 大于 384，则把第100个字符到倒数100个字符之间的内容替换为省略号
-def prune_message(message: Message) -> str:
-    if token_len(message.content) <= 384:
-        return message.content
-    return message.content[:100] + '...' + message.content[-100:]
-
-
-# 获取最近消息，每两条消息为一组，返回尽可能多的 token 不超过 1024 的最晚的精简过的消息
-def recent_history(current: CurrentConversation) -> List[Message]:
-    messages = deepcopy(current.messages)
-
-    token = 0
-    # 从最后一条消息开始，每两条消息为一组，精简消息，计算 token 数，如果 token 数超过 1024，则停止
-    i = 0
-    for i in range(len(messages) - 2, -1, -2):
-        messages[i + 1].content = prune_message(messages[i + 1])
-        messages[i + 1].tokens = token_len(messages[i + 1].content)
-        messages[i].content = prune_message(messages[i])
-        messages[i].tokens = token_len(messages[i].content)
-        token += messages[i + 1].tokens + messages[i].tokens + 2
-        if token > 1024:
-            break
-    i += 2
-    assert i <= len(messages) - 2  # 确保至少有两条消息
-    return messages[i:]
 
 
 def create(self: SessionInternal):
@@ -74,10 +45,7 @@ def replace(self: SessionInternal):
 
         # 生引导语
         memo = self.storage.current.pointer.memo
-        messages = recent_history(self.storage.current)
-        history = ""
-        for i in range(len(messages)):
-            history += self.texts[self.type].message(messages[i], self.params)
+        history, messages = self.texts[self.type].compile_history(self.storage.current.messages, self.params)
         guide = self.texts[self.type].inherit(self.params, memo, history)
 
         # 处理旧的 messages 备注
