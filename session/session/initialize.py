@@ -1,4 +1,5 @@
 import time
+from copy import deepcopy
 from typing import List
 
 import error
@@ -9,6 +10,7 @@ from session.session.internal import SessionInternal
 from tokenizer import token_len
 
 
+# 将最近聊天记录转换为字符串
 def messages_str(messages: List[Message], start: int = 0, end: int = None) -> str:
     if end is None:
         end = len(messages)
@@ -21,17 +23,31 @@ def messages_str(messages: List[Message], start: int = 0, end: int = None) -> st
     return s
 
 
-def recent_history(current: CurrentConversation) -> (str, List[Message]):
-    if len(current.messages) <= 2:
-        return messages_str(current.messages), current.messages[:]
+# 精简消息，如果消息的 token 大于 384，则把第100个字符到倒数100个字符之间的内容替换为省略号
+def prune_message(message: Message) -> str:
+    if token_len(message.content) <= 384:
+        return message.content
+    return message.content[:100] + '...' + message.content[-100:]
 
-    i = len(current.messages) - 3
-    tokens = current.messages[i + 1].tokens + current.messages[i + 2].tokens + 2
-    while i >= 0:
-        tokens += current.messages[i].tokens
-        if tokens > 1024:
+
+# 获取最近消息，每两条消息为一组，返回尽可能多的 token 不超过 1024 的最晚的精简过的消息
+def recent_history(current: CurrentConversation) -> (str, List[Message]):
+    messages = deepcopy(current.messages)
+
+    token = 0
+    # 从最后一条消息开始，每两条消息为一组，精简消息，计算 token 数，如果 token 数超过 1024，则停止
+    i = 0
+    for i in range(len(messages) - 2, -1, -2):
+        messages[i + 1].content = prune_message(messages[i + 1])
+        messages[i + 1].tokens = token_len(messages[i + 1].content)
+        messages[i].content = prune_message(messages[i])
+        messages[i].tokens = token_len(messages[i].content)
+        token += messages[i + 1].tokens + messages[i].tokens + 2
+        if token > 1024:
             break
-    return messages_str(current.messages, i + 1, len(current.messages)), current.messages[i + 1:]
+    i += 2
+    assert i <= len(messages) - 2  # 确保至少有两条消息
+    return messages_str(messages, i, len(messages)), messages[i:]
 
 
 def create(self: SessionInternal):

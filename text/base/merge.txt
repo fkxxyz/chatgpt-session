@@ -1,3 +1,8 @@
-Merge the following two memos, remove duplicate information, and make sure the final memo does not exceed 1000 words. Please do not reply to this message, simply enclose the contents of the new memo in triple backticks using the provided memo format:
+The following are two memos for the same user. Combine the fields from the second memo with their respective fields in the first memo, and simplify any repeated information into a brief statement, with a maximum of 1000 words.
+Output only the contents of final memo enclosed in three backticks and nothing else.
+
+first memo:
 ${memo}
+
+second memo:
 ${summary}

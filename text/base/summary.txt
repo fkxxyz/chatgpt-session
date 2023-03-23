@@ -1,4 +1,8 @@
-Please summarize our entire conversation in English as your personal memo, including Chinese names, nicknames, and any untranslatable Chinese characters to prevent information loss in translation. Please use the provided template and enclose the memo content (in your first person, I am your user) in three backticks (if certain fields are not mentioned, please leave them blank, do not fabricate information):
+Please respond in one of the following ways:
+- If this is our first conversation, output a blank memo with all fields empty.
+- If we have had some previous conversations, summarize all our previous conversations in English and output them as your personal memo (up to 1000 words). Please keep any Chinese names, nicknames, or any non-translatable Chinese characters to avoid losing information.
+Output only the contents of your memo enclosed in three backticks and nothing else.
+Here is the memo template (Leave blank fields for any conversation topics not covered instead of randomly generating!):
 ```
 My basic information:
 - Name: ChatGPT

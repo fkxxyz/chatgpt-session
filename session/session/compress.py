@@ -37,7 +37,7 @@ def summarize(self):
         assert self.command == SessionInternal.NONE  # 确保命令为空
         assert self.storage.current is not None  # 确保有数据
         assert self.storage.current.pointer.status == EnginePointer.FULLED  # 确保满了
-        assert len(self.storage.current.pointer.memo) == 0  # 确保没有备忘录
+        assert len(self.storage.current.pointer.summary) == 0  # 确保没有总结
 
         self.command = SessionInternal.SUMMARIZE
         self.status = SessionInternal.INITIALIZING
@@ -54,8 +54,8 @@ def merge(self: SessionInternal):
 
         assert self.command == SessionInternal.NONE  # 确保命令为空
         assert self.storage.current is not None  # 确保有数据
-        assert self.storage.current.pointer.status == EnginePointer.FULLED  # 确保满了
-        assert len(self.storage.current.pointer.memo) != 0  # 确保有备忘录
+        assert self.storage.current.pointer.status == EnginePointer.SUMMARIZED  # 确保已总结
+        assert len(self.storage.current.pointer.summary) != 0  # 确保有总结
 
         self.command = SessionInternal.MERGE
         self.status = SessionInternal.INITIALIZING
