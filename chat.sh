@@ -127,8 +127,14 @@ cmd_compress() {
 cmd_send() {
   local msg="$1"
   local id="$2"
+  local body
+  body="$(jq --arg message "$msg" '{message: $message}' <<< '{}')"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s --data-binary "$msg" "$BASE_URL/api/send?id=${id}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
+    -H "Content-Type: application/json" \
+    --data-binary "$body" \
+    "$BASE_URL/api/send?id=${id}"
+  )" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"

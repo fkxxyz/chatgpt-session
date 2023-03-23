@@ -49,7 +49,7 @@ def get(self: SessionInternal) -> SessionMessageResponse:
         return SessionMessageResponse("", "", False)
 
 
-def append_msg(self: SessionInternal, msg: str):
+def append_msg(self: SessionInternal, msg: str, remark: dict):
     with self.worker_lock:
         while self.status != SessionInternal.IDLE:  # 确保空闲状态
             self.worker_cond.wait()
@@ -60,7 +60,10 @@ def append_msg(self: SessionInternal, msg: str):
         assert self.storage.current is not None
         assert self.storage.current.pointer.status == EnginePointer.IDLE
         assert self.storage.current.messages[-1].sender == Message.AI  # 确保最后一条消息是AI的消息
-        self.storage.current.append_message(Message("", Message.USER, msg, token_len(msg), {}))  # 将要发送的消息追加到最后
+
+        message = Message("", Message.USER, msg, token_len(msg), remark)
+        message.content = self.texts[self.type].rule.compile_message(message)
+        self.storage.current.append_message(message)  # 将要发送的消息追加到最后
         self.storage.save()  # 保存到磁盘
 
         self.command = SessionInternal.SEND

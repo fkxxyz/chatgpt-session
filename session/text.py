@@ -69,3 +69,6 @@ class SessionText:
 
     def compile_history(self, messages: List[Message], params: dict) -> (str, List[Message]):
         return self.rule.compile_history(deepcopy(messages), deepcopy(params))
+
+    def compile_message(self, message: Message) -> str:
+        return self.rule.compile_message(deepcopy(message))

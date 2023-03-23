@@ -38,3 +38,7 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
     for message in messages:
         history += sender_map[message.sender] + ': ' + message.content + "\n"
     return history, messages
+
+
+def compile_message(message: Message) -> str:
+    return message.content

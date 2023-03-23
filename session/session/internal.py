@@ -129,8 +129,8 @@ class SessionInternal:
     def get(self) -> SessionMessageResponse:
         return self.modules.send.get(self)
 
-    def append_msg(self, msg: str):
-        return self.modules.send.append_msg(self, msg)
+    def append_msg(self, msg: str, remark: dict):
+        return self.modules.send.append_msg(self, msg, remark)
 
     def memo(self) -> str:
         with self.worker_lock:

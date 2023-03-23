@@ -75,11 +75,16 @@ def handle_send():
     session, r = get_session_query(id_)
     if r is not None:
         return r
-    msg_bytes = flask.request.get_data()
-    msg_str = msg_bytes.decode()
+    message_info = flask.request.get_json()
+    msg_str = message_info.get('message')
+    if msg_str is None or len(msg_str) == 0:
+        return flask.make_response('error: missing message', http.HTTPStatus.BAD_REQUEST)
+    remark = message_info.get('remark')
+    if remark is None:
+        remark = {}
 
     try:
-        session.append_msg(msg_str)
+        session.append_msg(msg_str, remark)
     except error.ChatGPTSessionError as e:
         return flask.make_response(str(e), e.HttpStatus)
 

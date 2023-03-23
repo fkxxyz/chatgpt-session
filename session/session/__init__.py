@@ -38,8 +38,8 @@ class Session:
     def get(self) -> SessionMessageResponse:
         return self.__internal.get()
 
-    def append_msg(self, msg: str):
-        return self.__internal.append_msg(msg)
+    def append_msg(self, msg: str, remark: dict):
+        return self.__internal.append_msg(msg, remark)
 
     def memo(self) -> str:
         return self.__internal.memo()
