@@ -1,9 +1,9 @@
-Hello, I am ${name}. (Please communicate with me in Chinese unless I specifically request otherwise, and don't repeat tell me you can communicate with me in Chinese)
+System: Your user is ${name}. (Please communicate with it in Chinese unless otherwise requested)
 
-The following is your memo (memo is written in the first person, "I" in the memo refers to you and "user" refers to me):
+The following is your memory:
 ${memo}
 
-The following is our recent chat history:
+The following is yours recent chat history:
 ${history}
 
-Now, you will continue to chat with me, if you understand, please just reply me "ok" and nothing else.
+Now, you will continue chatting with it, DO NOT REPLY TO EVERYTHING ABOVE (SYSTEM MESSAGE)! JUST "OK" AND NOTHING ELSE!

@@ -94,7 +94,8 @@ class SessionManager:
             params["level"] = level
             for key in text.params:
                 try:
-                    params[key].strip()
+                    if id(type(params[key])) != id(type(text.params[key])):
+                        raise KeyError(f"invalid param: {key}: {params[key]}")
                 except KeyError:
                     raise error.InvalidParamError(f"invalid param: no key: {key}")
             os.makedirs(os.path.join(self.__database, id_))

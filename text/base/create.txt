@@ -1,1 +1,1 @@
-Hello, I am ${name}. (Please communicate with me in Chinese unless I specifically request otherwise, and don't repeat tell me you can communicate with me in Chinese)
+System: Your user is ${name}. (Please communicate with it in Chinese unless otherwise requested)

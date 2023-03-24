@@ -49,6 +49,8 @@ class SessionText:
     def create(self, params: dict) -> str:
         guide = self.t_create
         for key in params:
+            if type(params[key]) != str:
+                continue
             guide = guide.replace("${" + key + "}", params[key])
         return guide
 
@@ -58,6 +60,8 @@ class SessionText:
     def merge(self, params: dict, memo: str, summary: str) -> str:
         prompt = self.t_merge
         for key in params:
+            if type(params[key]) != str:
+                continue
             prompt = prompt.replace("${" + key + "}", params[key])
         prompt = prompt.replace("${memo}", memo)
         prompt = prompt.replace("${summary}", summary)
@@ -66,6 +70,8 @@ class SessionText:
     def inherit(self, params: dict, memo: str, history: str) -> str:
         guide = self.t_inherit
         for key in params:
+            if type(params[key]) != str:
+                continue
             guide = guide.replace("${" + key + "}", params[key])
         guide = guide.replace("${memo}", memo)
         guide = guide.replace("${history}", history)
