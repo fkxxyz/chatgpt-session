@@ -16,4 +16,4 @@ ${memo}
 The following is recent chat history:
 ${history}
 
-Now, you will continue to chat with it, if you understand, please just reply "ok" without anything else.
+Now, you will continue to chat with it, DO NOT REPLY TO EVERYTHING ABOVE (SYSTEM MESSAGE)! JUST "OK" AND NOTHING ELSE!
