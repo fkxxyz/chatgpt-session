@@ -12,6 +12,7 @@ class AccountInfo:
     counter: int
     is_busy: bool
     is_disabled: bool
+    level: int
     err: str
 
 
@@ -44,8 +45,9 @@ class RevChatGPTWeb:
         self.__session.headers.update({'Content-Type': 'application/octet-stream'})
         self.__url: str = url
 
-    def accounts(self) -> requests.Response:
-        return self.__session.get(self.__url + '/api/account/valid')
+    def accounts(self, level: int = 65536) -> requests.Response:
+        params = {'level': level}
+        return self.__session.get(self.__url + '/api/account/valid', params=params)
 
     def set_title(self, account: str, id_: str, title: str) -> requests.Response:
         params = {'account': account, 'id': id_}

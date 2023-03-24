@@ -208,7 +208,7 @@ class Scheduler:
             for message in current.messages:
                 messages.append(message.to_openai_chat())
 
-            if current.pointer.status >= EnginePointer.IDLE:
+            if current.pointer.status > EnginePointer.IDLE:
                 # 总 token 已满，需要压缩
                 assert current.messages[-1].sender == Message.AI  # 最后一条消息必须是 AI
                 messages.append(engine.openai_chat.Message(
