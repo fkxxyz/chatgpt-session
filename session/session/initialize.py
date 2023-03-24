@@ -24,6 +24,7 @@ def create(self: SessionInternal):
 
         # 创建出数据
         self.storage.current = CurrentConversation.create(guide)
+        self.storage.current.pointer.level = self.level
         self.storage.current.pointer.title = self.id
         self.storage.current.pointer.status = EnginePointer.UNINITIALIZED
         self.storage.save()  # 保存到磁盘
@@ -55,6 +56,7 @@ def replace(self: SessionInternal):
         # 创建出数据
         current = CurrentConversation.create(guide, memo, history)
         current.messages = messages
+        current.pointer.level = self.level
         current.pointer.title = self.id
         current.pointer.status = EnginePointer.UNINITIALIZED
         self.storage.replace(current)  # 保存到磁盘

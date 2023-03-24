@@ -8,6 +8,9 @@ from tokenizer import token_len
 
 @dataclass
 class EnginePointer:
+    # 帐号等级
+    level: int = 65536
+
     # 引擎
     engine: str = ""
 

@@ -156,7 +156,7 @@ def on_send(self: SessionInternal):
             self.storage.current.pointer.id = new_message.id
             self.storage.current.pointer.mid = new_message.mid
             self.storage.current.pointer.status = EnginePointer.IDLE
-            if self.storage.current.tokens >= 2048:
+            if self.storage.current.tokens >= 2560:
                 self.storage.current.pointer.status = EnginePointer.FULLED
             self.storage.save()
 

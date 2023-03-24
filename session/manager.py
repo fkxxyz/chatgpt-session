@@ -1,7 +1,6 @@
 from datetime import datetime
 import json
 import os
-import shutil
 
 from collections import OrderedDict
 from typing import List
@@ -57,7 +56,7 @@ class SessionManager:
                     continue
                 try:
                     s = Session(session_path, self.__texts, self.__scheduler)
-                except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+                except (FileNotFoundError, json.JSONDecodeError, KeyError, ValueError) as e:
                     print(e)
                     continue
                 self.__sessions[id_] = s
@@ -88,12 +87,17 @@ class SessionManager:
                 text = SessionText(os.path.join(self.__text_path, type_))
             except error.NotFoundError:
                 raise error.NotFoundError(f"no such session type: {type_}")
+            try:
+                level = int(params.get("level", self.__texts[type_].level))
+            except ValueError:
+                raise error.InvalidParamError(f"invalid param: level: {params.get('level')}")
+            params["level"] = level
             for key in text.params:
                 try:
                     params[key].strip()
                 except KeyError:
                     raise error.InvalidParamError(f"invalid param: no key: {key}")
-                os.makedirs(os.path.join(self.__database, id_))
+            os.makedirs(os.path.join(self.__database, id_))
             with open(os.path.join(self.__database, id_, "index.json"), 'w') as f:
                 f.write(json.dumps({
                     "id": id_,

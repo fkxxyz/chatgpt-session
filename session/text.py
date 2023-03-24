@@ -24,6 +24,10 @@ class SessionText:
             raise error.InvalidParamError(f"no such text {d}")
         except json.JSONDecodeError as e:
             raise error.InternalError(f"invalid text params.json in {d}: {e}")
+        try:
+            self.level: int = int(self.params["level"])
+        except (KeyError, ValueError):
+            raise error.InternalError(f"invalid level key in params.json")
 
         try:
             # 创建提示

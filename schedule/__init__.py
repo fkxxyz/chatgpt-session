@@ -140,7 +140,7 @@ class Scheduler:
     # 评估一个会话的请求应该被调度到哪个引擎的哪个账户上，返回引擎id和账户id
     def evaluate(self, pointer: EnginePointer) -> Tuple[str, str]:
         api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
-        accounts_dict = json.loads(call_until_success(api.accounts))
+        accounts_dict = json.loads(call_until_success(lambda: api.accounts(pointer.level)))
         accounts: List[AccountInfo] = []
         accounts_found = False
         for account_dict in accounts_dict:

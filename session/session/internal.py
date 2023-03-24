@@ -68,6 +68,7 @@ class SessionInternal:
         self.id: str = j["id"]
         self.type: str = j["type"]
         self.params: dict = j["params"]
+        self.level: int = int(self.params["level"])
 
         self.logger = logging.getLogger(self.id)
         self.texts: OrderedDict[str, SessionText] = texts
