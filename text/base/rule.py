@@ -19,10 +19,23 @@ sender_map = {
 
 
 def compile_history(messages: List[Message], params: dict) -> (str, List[Message]):
-    token = 0
-    # 从最后一条消息开始，每两条消息为一组，精简消息，计算 token 数，如果 token 数超过 1024，则停止
-    i = 0
-    for i in range(len(messages) - 2, -1, -2):
+    assert len(messages) >= 2  # 确保至少有两条消息
+    i = len(messages) - 2
+
+    # 最后两条消息，如果 token 数超过 1536，则精简消息，优先精简用户的消息
+    token = messages[i].tokens + messages[i].tokens + 2
+    if token > 1536:
+        messages[i].content = prune_message(messages[i])
+        messages[i].tokens = token_len(messages[i].content)
+        token = messages[i].tokens + messages[i + 1].tokens + 2
+        if token > 1536:
+            messages[i + 1].content = prune_message(messages[i + 1])
+            messages[i + 1].tokens = token_len(messages[i + 1].content)
+            token = messages[i + 1].tokens + messages[i].tokens + 2
+    i -= 2
+
+    # 每两条消息为一组，精简消息，计算 token 数，如果 token 数超过 1024，则停止
+    while i >= 0:
         messages[i + 1].content = prune_message(messages[i + 1])
         messages[i + 1].tokens = token_len(messages[i + 1].content)
         messages[i].content = prune_message(messages[i])
@@ -30,8 +43,8 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
         token += messages[i + 1].tokens + messages[i].tokens + 2
         if token > 1024:
             break
+        i -= 2
     i += 2
-    assert i <= len(messages) - 2  # 确保至少有两条消息
 
     history = ""
     messages = messages[i:]
