@@ -5,7 +5,7 @@ class GlobalObjectClass:
     def __init__(self):
         self.text: str = ""
         self.database: str = ""
-        self.session_manager: SessionManager = None
+        self.session_manager: SessionManager | None = None
 
 
 globalObject = GlobalObjectClass()

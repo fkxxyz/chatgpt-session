@@ -50,6 +50,19 @@ cmd_create() {
   jq -r '.' <<< "$json_str"
 }
 
+cmd_createi() {
+  local id="$1"
+  echo "正在发送..." >&2
+  local result exit_code=0
+  result="$("$0" create "$@")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$result"
+    return "$exit_code"
+  fi
+  watch -et -n 0.1 "$0" geti "$id" <<< '' || true
+  cmd_get "$id"
+}
+
 cmd_delete() {
   local id="$1"
   local json_str exit_code=0

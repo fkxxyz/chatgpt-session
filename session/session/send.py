@@ -21,6 +21,8 @@ def get(self: SessionInternal) -> SessionMessageResponse:
 
     if pointer.engine == RevChatGPTWeb.__name__:
         if len(pointer.new_mid) == 0:
+            if pointer.status == EnginePointer.UNINITIALIZED:
+                return SessionMessageResponse("", "", False)
             if len(messages) == 0:
                 return SessionMessageResponse("", "", True)
             elif messages[-1].sender == Message.AI:
@@ -36,12 +38,16 @@ def get(self: SessionInternal) -> SessionMessageResponse:
         new_message = self.scheduler.get(pointer)
         return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
     elif pointer.engine == OpenAIChatCompletion.__name__:
+        if pointer.status == EnginePointer.UNINITIALIZED:
+            return SessionMessageResponse("", "", False)
         if len(messages) == 0:
             return SessionMessageResponse("", "", True)
         if messages[-1].sender == Message.AI:
             return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
         return SessionMessageResponse("", "", False)
     else:
+        if pointer.status == EnginePointer.UNINITIALIZED:
+            return SessionMessageResponse("", "", False)
         if len(messages) == 0:
             return SessionMessageResponse("", "", True)
         if messages[-1].sender == Message.AI:

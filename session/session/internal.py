@@ -5,7 +5,6 @@ import os
 import threading
 from collections import OrderedDict
 from dataclasses import dataclass
-from types import ModuleType
 from typing import List
 
 from memory import Message
