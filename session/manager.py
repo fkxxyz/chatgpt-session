@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from datetime import datetime
 import json
 import os
@@ -6,6 +7,7 @@ from collections import OrderedDict
 from typing import List
 
 import error
+from memory import CurrentConversation, EnginePointer
 from rwlock import RWLock
 from schedule import Scheduler
 from session.session import Session
@@ -105,6 +107,62 @@ class SessionManager:
                     "type": type_,
                     "params": params,
                 }, ensure_ascii=False, indent=2))
+            s = Session(os.path.join(self.__database, id_), self.__texts, self.__scheduler)
+            self.__sessions[id_] = s
+            return s
+        except FileExistsError:
+            raise error.InvalidParamError(f"session already exists: {id_}")
+        except OSError as e:
+            raise error.InternalError(e)
+        finally:
+            self.__lock.release()
+
+    def add_exists(self, id_: str, type_: str, params: dict, memo: str, history: str) -> Session:
+        if len(id_.strip()) == 0:
+            raise error.InvalidParamError(f"invalid session id: {id_}")
+        if len(type_.strip()) == 0:
+            raise error.InvalidParamError(f"invalid session type: {type_}")
+        if id_ in self.__sessions:
+            raise error.InvalidParamError(f"session already exists: {id_}")
+
+        self.__lock.acquire()
+        try:
+            try:
+                text = SessionText(os.path.join(self.__text_path, type_))
+            except error.NotFoundError:
+                raise error.NotFoundError(f"no such session type: {type_}")
+            try:
+                level = int(params.get("level", self.__texts[type_].level))
+            except ValueError:
+                raise error.InvalidParamError(f"invalid param: level: {params.get('level')}")
+            params["level"] = level
+            for key in text.params:
+                try:
+                    if id(type(params[key])) != id(type(text.params[key])):
+                        raise KeyError(f"invalid param: {key}: {params[key]}")
+                except KeyError:
+                    raise error.InvalidParamError(f"invalid param: no key: {key}")
+            os.makedirs(os.path.join(self.__database, id_))
+            with open(os.path.join(self.__database, id_, "index.json"), 'w') as f:
+                f.write(json.dumps({
+                    "id": id_,
+                    "type": type_,
+                    "params": params,
+                }, ensure_ascii=False, indent=2))
+
+            # 生引导语
+            guide = text.inherit(params, memo, history)
+
+            # 创建出数据
+            current = CurrentConversation.create(guide, memo, history)
+            current.messages = []
+            current.pointer.level = level
+            current.pointer.title = id_
+            current.pointer.status = EnginePointer.UNINITIALIZED
+            current_str = json.dumps(asdict(current), ensure_ascii=False, indent=2)
+            with open(os.path.join(self.__database, id_, "current.json"), "w") as f:
+                f.write(current_str)
+
             s = Session(os.path.join(self.__database, id_), self.__texts, self.__scheduler)
             self.__sessions[id_] = s
             return s

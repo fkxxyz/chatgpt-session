@@ -55,6 +55,34 @@ def handle_create():
     return flask.jsonify(s.asdict())
 
 
+@app.route('/api/inherit', methods=['PUT'])
+def handle_inherit():
+    id_ = flask.request.args.get('id')
+    if id_ is None or len(id_) == 0:
+        return flask.make_response('error: missing id query', http.HTTPStatus.BAD_REQUEST)
+    type_ = flask.request.args.get('type')
+    if type_ is None or len(type_) == 0:
+        return flask.make_response('error: missing type query', http.HTTPStatus.BAD_REQUEST)
+
+    data = flask.request.get_json()
+    params = data.get('params')
+    if params is None:
+        return flask.make_response('error: missing params', http.HTTPStatus.BAD_REQUEST)
+    memo = data.get('memo')
+    if memo is None:
+        return flask.make_response('error: missing memo', http.HTTPStatus.BAD_REQUEST)
+    history = data.get('history')
+    if history is None:
+        return flask.make_response('error: missing history', http.HTTPStatus.BAD_REQUEST)
+
+    try:
+        s = globalObject.session_manager.add_exists(id_, type_, params, memo, history)
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+
+    return flask.jsonify(s.asdict())
+
+
 @app.route('/api/delete', methods=['DELETE'])
 def handle_delete():
     id_ = flask.request.args.get('id')

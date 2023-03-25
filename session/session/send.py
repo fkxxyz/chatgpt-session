@@ -65,7 +65,8 @@ def append_msg(self: SessionInternal, msg: str, remark: dict):
         assert self.command == SessionInternal.NONE  # 确保命令为空
         assert self.storage.current is not None
         assert self.storage.current.pointer.status == EnginePointer.IDLE
-        assert self.storage.current.messages[-1].sender == Message.AI  # 确保最后一条消息是AI的消息
+        assert len(self.storage.current.messages) == 0 or \
+               self.storage.current.messages[-1].sender == Message.AI  # 确保最后一条消息是AI的消息
 
         message = Message("", Message.USER, msg, token_len(msg), remark)
         message.content = self.texts[self.type].rule.compile_message(message)

@@ -50,6 +50,24 @@ cmd_create() {
   jq -r '.' <<< "$json_str"
 }
 
+cmd_inherit() {
+  local id="$1"
+  local type="$2"
+  local data
+  data="$(cat)"
+  local json_str exit_code=0
+  json_str="$(
+    curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
+      -H "Content-Type: application/json" \
+      -X PUT --data-binary "$data" "$BASE_URL/api/inherit?id=${id}&type=${type}")" || \
+      exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
 cmd_createi() {
   local id="$1"
   echo "正在发送..." >&2
@@ -236,6 +254,7 @@ Commands:
   list
   info [id]
   create <id> <type> <<< <params>
+  inherit <id> <type> <<< <data>
   delete <id>
   status [id]
   memo [id]
