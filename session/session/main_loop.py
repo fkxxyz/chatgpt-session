@@ -21,9 +21,9 @@ def main_loop(self: SessionInternal):
         else:
             self.inherit()
     else:
-        assert len(self.storage.current.messages) != 0
-        if self.storage.current.messages[-1].sender == Message.USER:
-            self.send()
+        if len(self.storage.current.messages) != 0:
+            if self.storage.current.messages[-1].sender == Message.USER:
+                self.send()
 
     cmd_map = {
         SessionInternal.SEND: self.on_send,

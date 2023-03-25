@@ -30,6 +30,8 @@ def get(self: SessionInternal) -> SessionMessageResponse:
             else:
                 return SessionMessageResponse("", "", False)
         if pointer.mid == pointer.new_mid:
+            if pointer.status == EnginePointer.UNINITIALIZED:
+                return SessionMessageResponse("", "", False)
             assert len(messages) != 0
             if messages[-1].sender == Message.AI:
                 return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
