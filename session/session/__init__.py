@@ -35,8 +35,8 @@ class Session:
     def send(self):
         return self.__internal.send()
 
-    def get(self) -> SessionMessageResponse:
-        return self.__internal.get()
+    def get(self, stop=False) -> SessionMessageResponse:
+        return self.__internal.get(stop)
 
     def append_msg(self, msg: str, remark: dict):
         return self.__internal.append_msg(msg, remark)

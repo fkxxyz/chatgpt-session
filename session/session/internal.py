@@ -36,8 +36,6 @@ class SessionInternal:
     SUMMARIZE = 3
     MERGE = 4
     INHERIT = 5
-    STOP = 6
-    EXIT = 7
     CMD_STR = {
         NONE: "NONE",
         CREATE: "CREATE",
@@ -45,14 +43,13 @@ class SessionInternal:
         SUMMARIZE: "SUMMARIZE",
         MERGE: "MERGE",
         INHERIT: "INHERIT",
-        STOP: "STOP",
-        EXIT: "EXIT",
     }
 
     # 状态
     IDLE = 0  # 空闲
     GENERATING = 1  # 生成中（可停止）
     INITIALIZING = 2  # 初始化中（不可停止）
+    STOPPING = 3  # 停止中
 
     def __init__(self, d: str, texts: OrderedDict[str, SessionText], scheduler: Scheduler):
         self.modules: SessionInternalModules = SessionInternalModules(
@@ -126,8 +123,8 @@ class SessionInternal:
     def send(self):
         return self.modules.send.send(self)
 
-    def get(self) -> SessionMessageResponse:
-        return self.modules.send.get(self)
+    def get(self, stop=False) -> SessionMessageResponse:
+        return self.modules.send.get(self, stop)
 
     def append_msg(self, msg: str, remark: dict):
         return self.modules.send.append_msg(self, msg, remark)

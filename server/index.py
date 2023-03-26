@@ -134,15 +134,16 @@ def get_session_query(id_: str) -> (Session, flask.Response | None):
     return session, None
 
 
-@app.route('/api/get')
+@app.route('/api/get', methods=['GET', 'PATCH'])
 def handle_get():
     id_ = flask.request.args.get('id')
     session, r = get_session_query(id_)
     if r is not None:
         return r
 
+    stop = flask.request.method == 'PATCH'
     try:
-        m = session.get()
+        m = session.get(stop)
     except error.ChatGPTSessionError as e:
         return flask.make_response(str(e), e.HttpStatus)
 

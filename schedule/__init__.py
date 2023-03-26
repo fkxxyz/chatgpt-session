@@ -14,24 +14,6 @@ from engine.rev_chatgpt_web import RevChatGPTWeb, AccountInfo, SendResponse, Get
 from memory import CurrentConversation, Message, EnginePointer
 
 
-def call_until_success(fn: Callable[[], requests.Response]) -> bytes:
-    while True:
-        try:
-            resp = fn()
-        except requests.RequestException as e:
-            print(f"请求错误： {e}")
-            print(f"等待 10 秒后重试 ...")
-            time.sleep(10)
-            continue
-        if resp.status_code != http.HTTPStatus.OK:
-            print(f"响应返回错误 {resp.status_code}： {resp.content.decode()}")
-            print(f"等待 10 秒后重试 ...")
-            time.sleep(10)
-            continue
-
-        return resp.content
-
-
 def account_load(account: AccountInfo) -> int:
     return account.counter * 2 if account.is_busy else account.counter
 
@@ -51,6 +33,27 @@ sleep_strategies = {
     524: SleepStrategy(10000, 2, 60000),
     529: SleepStrategy(10000, 2, 60000),
 }
+
+
+def call_until_success(fn: Callable[[], requests.Response]) -> bytes:
+    while True:
+        try:
+            resp = fn()
+        except requests.RequestException as e:
+            print(f"请求错误： {e}")
+            print(f"等待 10 秒后重试 ...")
+            time.sleep(10)
+            continue
+        if resp.status_code % 100 == 5:
+            print(f"响应返回错误 {resp.status_code}： {resp.content.decode()}")
+            print(f"等待 10 秒后重试 ...")
+            time.sleep(10)
+            continue
+        if resp.status_code != http.HTTPStatus.OK:
+            print(f"响应返回错误 {resp.status_code} ，终止： {resp.content.decode()}")
+            raise RuntimeError(f"响应返回错误 {resp.status_code}： {resp.content.decode()}")
+
+        return resp.content
 
 
 def rev_chatgpt_web_history(api: RevChatGPTWeb, account: str, id_: str) -> dict:
@@ -219,7 +222,7 @@ class Scheduler:
         else:
             raise error.NotImplementedError1(f"no such engine: f{current.pointer.engine}")
 
-    def get(self, pointer: EnginePointer) -> GetMessageResponse:
+    def get(self, pointer: EnginePointer, stop=False) -> GetMessageResponse:
         assert pointer.engine in self.__engines
 
         if pointer.engine == RevChatGPTWeb.__name__:
@@ -227,7 +230,7 @@ class Scheduler:
             api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
 
             new_message = GetMessageResponse.from_body(
-                call_until_success(lambda: api.get(pointer.new_mid)))
+                call_until_success(lambda: api.get(pointer.new_mid, stop)))
         elif pointer.engine == OpenAIChatCompletion.__name__:
             raise error.NotImplementedError1(f"get() not support engine: f{pointer.engine}")
         else:

@@ -10,8 +10,13 @@ from session.session.internal import SessionInternal, SessionMessageResponse
 from tokenizer import token_len
 
 
-def get(self: SessionInternal) -> SessionMessageResponse:
+def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
     with self.worker_lock:
+        if stop and self.status == SessionInternal.GENERATING:
+            self.status = SessionInternal.STOPPING
+            while self.status == SessionInternal.STOPPING:
+                self.worker_cond.wait()
+
         while not self.readable():
             self.worker_cond.wait()
         pointer = copy.deepcopy(self.storage.current.pointer)
@@ -151,10 +156,14 @@ def on_send(self: SessionInternal):
             self.storage.save()
 
         # 循环等到 ChatGPT 回复完成
+        stop_flag = False
         while True:
-            new_message = self.scheduler.get(self.storage.current.pointer)
+            new_message = self.scheduler.get(self.storage.current.pointer, stop_flag)
             if new_message.end:
                 break
+            with self.worker_lock:
+                if self.status == SessionInternal.STOPPING:
+                    stop_flag = True
             time.sleep(0.1)
 
         # 将 ChatGPT 回复的消息加入到记录中

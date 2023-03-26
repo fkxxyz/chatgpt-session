@@ -62,6 +62,7 @@ class RevChatGPTWeb:
         params = {'account': account, 'id': id_, 'mid': mid}
         return self.__session.post(self.__url + '/api/send', params=params, data=msg.encode('utf-8'))
 
-    def get(self, mid: str) -> requests.Response:
+    def get(self, mid: str, stop=False) -> requests.Response:
         params = {'mid': mid}
-        return self.__session.get(self.__url + '/api/get', params=params)
+        method = "PATCH" if stop else "GET"
+        return self.__session.request(method, self.__url + '/api/get', params=params)
