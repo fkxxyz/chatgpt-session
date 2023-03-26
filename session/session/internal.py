@@ -36,6 +36,7 @@ class SessionInternal:
     SUMMARIZE = 3
     MERGE = 4
     INHERIT = 5
+    CLEAN = 6
     CMD_STR = {
         NONE: "NONE",
         CREATE: "CREATE",
@@ -43,6 +44,7 @@ class SessionInternal:
         SUMMARIZE: "SUMMARIZE",
         MERGE: "MERGE",
         INHERIT: "INHERIT",
+        CLEAN: "CLEAN",
     }
 
     # 状态
@@ -120,6 +122,9 @@ class SessionInternal:
     def merge(self):
         return self.modules.compress.merge(self)
 
+    def clean(self):
+        return self.modules.compress.clean(self)
+
     def send(self):
         return self.modules.send.send(self)
 
@@ -157,6 +162,9 @@ class SessionInternal:
 
     def on_merge(self):
         return self.modules.compress.on_merge(self)
+
+    def on_clean(self):
+        return self.modules.compress.on_clean(self)
 
     def on_inherit(self):
         return self.modules.initialize.on_inherit(self)

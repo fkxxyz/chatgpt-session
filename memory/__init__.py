@@ -23,7 +23,8 @@ class EnginePointer:
     IDLE = 1  # 空闲，可接收消息
     FULLED = 2  # token 数量已满（无法再接收新消息，接下来需要总结）
     SUMMARIZED = 3  # 总结完毕（无法再接收新消息，接下来需要合并）
-    MERGED = 4  # 合并完毕（无法再接收新消息，接下来需要替换、继承）
+    MERGED = 4  # 合并完毕（无法再接收新消息，接下来需要清理）
+    CLEANED = 5  # 清理完毕（接下来需要替换、继承）
 
     # 总结出的临时备忘录
     summary: str = ""

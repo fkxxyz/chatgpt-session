@@ -240,4 +240,4 @@ class Scheduler:
     def clean(self, pointer: EnginePointer):
         if pointer.engine == RevChatGPTWeb.__name__:
             api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
-            call_until_success(lambda: api.delete(pointer.id))
+            call_until_success(lambda: api.delete(pointer.account, pointer.id))

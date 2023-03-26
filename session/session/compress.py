@@ -62,6 +62,21 @@ def merge(self: SessionInternal):
         self.worker_cond.notify_all()
 
 
+def clean(self: SessionInternal):
+    self.logger.info("put command CLEAN")
+    with self.worker_lock:
+        while self.status != SessionInternal.IDLE:  # 确保空闲状态
+            self.worker_cond.wait()
+
+        assert self.command == SessionInternal.NONE  # 确保命令为空
+        assert self.storage.current is not None  # 确保有数据
+        assert len(self.storage.current.pointer.memo) != 0  # 确保有备忘录
+
+        self.command = SessionInternal.CLEAN
+        self.status = SessionInternal.INITIALIZING
+        self.worker_cond.notify_all()
+
+
 def on_summarize(self: SessionInternal):
     self.logger.info("on_summarize() enter")
     with self.worker_lock:
@@ -123,13 +138,12 @@ def on_summarize(self: SessionInternal):
             self.storage.current.pointer.status = EnginePointer.MERGED
             self.storage.save()
 
-        # 清理会话
-        self.scheduler.clean(self.storage.current.pointer)
-
-        # 备忘录记录完了，进入继承状态
+        # 备忘录记录完了，进入清理状态
         with self.worker_lock:
             self.reading_num -= 1
-        self.replace()
+            self.command = SessionInternal.CLEAN
+            self.status = SessionInternal.INITIALIZING
+            self.worker_cond.notify_all()
         self.logger.info("on_summarize() leave")
         return
 
@@ -215,11 +229,29 @@ def on_merge(self: SessionInternal):
         self.storage.current.pointer.status = EnginePointer.MERGED
         self.storage.save()
 
+    # 备忘录记录完了，进入清理状态
+    with self.worker_lock:
+        self.reading_num -= 1
+        self.command = SessionInternal.CLEAN
+        self.status = SessionInternal.INITIALIZING
+        self.worker_cond.notify_all()
+    self.logger.info("on_merge() leave")
+
+
+def on_clean(self: SessionInternal):
+    self.logger.info("on_clean() enter")
+    with self.worker_lock:
+        while not self.readable():
+            self.worker_cond.wait()
+        self.reading_num += 1
+
     # 清理会话
     self.scheduler.clean(self.storage.current.pointer)
 
-    # 备忘录记录完了，进入继承状态
+    # 清理完了，进入继承状态
     with self.worker_lock:
+        self.storage.current.pointer.status = EnginePointer.CLEANED
+        self.storage.save()
         self.reading_num -= 1
     self.replace()
-    self.logger.info("on_merge() leave")
+    self.logger.info("on_clean() leave")

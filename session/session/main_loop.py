@@ -12,8 +12,13 @@ def main_loop(self: SessionInternal):
     elif self.storage.current.pointer.status == EnginePointer.FULLED:
         self.summarize()
     elif self.storage.current.pointer.status == EnginePointer.SUMMARIZED:
-        self.merge()
+        if len(self.storage.current.pointer.memo) != 0:
+            self.clean()
+        else:
+            self.merge()
     elif self.storage.current.pointer.status == EnginePointer.MERGED:
+        self.clean()
+    elif self.storage.current.pointer.status == EnginePointer.CLEANED:
         self.replace()
     elif self.storage.current.pointer.status == EnginePointer.UNINITIALIZED:
         if len(self.storage.current.memo) == 0:
@@ -30,6 +35,7 @@ def main_loop(self: SessionInternal):
         SessionInternal.CREATE: self.on_send,
         SessionInternal.SUMMARIZE: self.on_summarize,
         SessionInternal.MERGE: self.on_merge,
+        SessionInternal.CLEAN: self.on_clean,
         SessionInternal.INHERIT: self.on_inherit,
     }
     while True:  # 开始主循环
