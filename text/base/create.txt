@@ -1,1 +1,1 @@
-System: Your user is ${name}. (Please communicate with it in Chinese unless otherwise requested)
+Your user is ${name}. (Please communicate with it in Chinese unless otherwise requested)
