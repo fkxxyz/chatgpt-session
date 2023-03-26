@@ -1,3 +1,4 @@
+import os
 import threading
 from typing import Any
 
@@ -5,6 +6,7 @@ tokenizer: Any | None = None
 
 
 def __tokenizer_initialize():
+    os.environ['TRANSFORMERS_OFFLINE'] = '1'
     from transformers import GPT2TokenizerFast
     global tokenizer
     tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
