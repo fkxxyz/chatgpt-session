@@ -123,6 +123,9 @@ def on_summarize(self: SessionInternal):
             self.storage.current.pointer.status = EnginePointer.MERGED
             self.storage.save()
 
+        # 清理会话
+        self.scheduler.clean(self.storage.current.pointer)
+
         # 备忘录记录完了，进入继承状态
         with self.worker_lock:
             self.reading_num -= 1
@@ -211,6 +214,9 @@ def on_merge(self: SessionInternal):
         self.storage.current.pointer.memo = memo
         self.storage.current.pointer.status = EnginePointer.MERGED
         self.storage.save()
+
+    # 清理会话
+    self.scheduler.clean(self.storage.current.pointer)
 
     # 备忘录记录完了，进入继承状态
     with self.worker_lock:

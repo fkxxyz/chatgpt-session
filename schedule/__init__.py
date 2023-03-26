@@ -236,3 +236,8 @@ class Scheduler:
         else:
             raise error.NotImplementedError1(f"no such engine: f{pointer.engine}")
         return new_message
+
+    def clean(self, pointer: EnginePointer):
+        if pointer.engine == RevChatGPTWeb.__name__:
+            api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
+            call_until_success(lambda: api.delete(pointer.id))
