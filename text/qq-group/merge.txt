@@ -1,0 +1,8 @@
+The following are two memos for the same group. Combine the fields from the second memo with their respective fields in the first memo, and simplify any repeated information into a brief statement, with a maximum of 1000 words.
+Output only the contents of final memo enclosed in three backticks and nothing else.
+
+first memo:
+${memo}
+
+second memo:
+${summary}

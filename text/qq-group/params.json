@@ -1,0 +1,10 @@
+{
+  "group_id": "群号",
+  "group_name": "群名",
+  "group_announcement": "群公告",
+  "ai_id": "AI的QQ号",
+  "ai_nickname": "AI昵称",
+  "ai_age": "AI年龄",
+  "ai_sex": "AI性别",
+  "level": 65536
+}
