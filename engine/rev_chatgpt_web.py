@@ -67,6 +67,10 @@ class RevChatGPTWeb:
         method = "PATCH" if stop else "GET"
         return self.__session.request(method, self.__url + '/api/get', params=params)
 
-    def delete(self, account: str, id_: str):
+    def delete(self, account: str, id_: str) -> requests.Response:
         params = {'account': account, 'id': id_}
         return self.__session.delete(self.__url + '/api/conversation', params=params)
+
+    def counter(self, account: str, n: int = 1) -> requests.Response:
+        params = {'account': account, 'n': n}
+        return self.__session.patch(self.__url + '/api/account/lock', params=params)

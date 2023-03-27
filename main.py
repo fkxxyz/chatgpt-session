@@ -32,7 +32,7 @@ def run(host: str, port: int, text: str, config_path: str, database: str):
     globalObject.session_manager = SessionManager(text, database, scheduler)
 
     from waitress import serve
-    serve(app, host=host, port=port)
+    serve(app, host=host, port=port, threads=256)
 
 
 def main() -> int:

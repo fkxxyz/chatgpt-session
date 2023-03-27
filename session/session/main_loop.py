@@ -25,6 +25,8 @@ def main_loop(self: SessionInternal):
             self.send()
         else:
             self.inherit()
+    elif self.storage.current.pointer.status == EnginePointer.BREAK:
+        self.inherit()
     else:
         if len(self.storage.current.messages) != 0:
             if self.storage.current.messages[-1].sender == Message.USER:
@@ -37,6 +39,7 @@ def main_loop(self: SessionInternal):
         SessionInternal.MERGE: self.on_merge,
         SessionInternal.CLEAN: self.on_clean,
         SessionInternal.INHERIT: self.on_inherit,
+        SessionInternal.BREAK: self.on_inherit,
     }
     while True:  # 开始主循环
         with self.worker_lock:

@@ -19,16 +19,17 @@ sender_map = {
 
 
 def compile_history(messages: List[Message], params: dict) -> (str, List[Message]):
-    assert len(messages) >= 2  # 确保至少有两条消息
+    if len(messages) < 2:  # 确保至少有两条消息
+        return "<empty>", []
     i = len(messages) - 2
 
-    # 最后两条消息，如果 token 数超过 1536，则精简消息，优先精简用户的消息
-    token = messages[i].tokens + messages[i].tokens + 2
-    if token > 1536:
+    # 最后两条消息，如果 token 数超过 512，则精简消息，优先精简用户的消息
+    token = messages[i].tokens + messages[i + 1].tokens + 2
+    if token > 512:
         messages[i].content = prune_message(messages[i])
         messages[i].tokens = token_len(messages[i].content)
         token = messages[i].tokens + messages[i + 1].tokens + 2
-        if token > 1536:
+        if token > 512:
             messages[i + 1].content = prune_message(messages[i + 1])
             messages[i + 1].tokens = token_len(messages[i + 1].content)
             token = messages[i + 1].tokens + messages[i].tokens + 2

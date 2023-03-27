@@ -132,7 +132,14 @@ def on_send(self: SessionInternal):
             self.logger.error("on_send() send error: %s", err)
             self.storage.current.pointer.engine = ""
             self.storage.current.pointer.account = ""
-            time.sleep(1)
+
+            # 帐号问题导致消息记录需要丢弃
+            with self.worker_lock:
+                self.status = SessionInternal.INITIALIZING
+                self.reading_num -= 1
+            self.break_()
+            self.logger.info("on_send() leave")
+            return
 
     if self.storage.current.pointer.engine == OpenAIChatCompletion.__name__:
         # 将回复的消息加入到记录中

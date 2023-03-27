@@ -23,7 +23,7 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
     i = len(messages) - 2
 
     # 最后两条消息，如果 token 数超过 1536，则精简消息，优先精简用户的消息
-    token = messages[i].tokens + messages[i].tokens + 2
+    token = messages[i].tokens + messages[i + 1].tokens + 2
     if token > 1536:
         messages[i].content = prune_message(messages[i])
         messages[i].tokens = token_len(messages[i].content)

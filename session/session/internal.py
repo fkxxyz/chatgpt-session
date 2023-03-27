@@ -37,6 +37,7 @@ class SessionInternal:
     MERGE = 4
     INHERIT = 5
     CLEAN = 6
+    BREAK = 7
     CMD_STR = {
         NONE: "NONE",
         CREATE: "CREATE",
@@ -45,6 +46,7 @@ class SessionInternal:
         MERGE: "MERGE",
         INHERIT: "INHERIT",
         CLEAN: "CLEAN",
+        BREAK: "BREAK",
     }
 
     # 状态
@@ -109,6 +111,9 @@ class SessionInternal:
 
     def replace(self):
         return self.modules.initialize.replace(self)
+
+    def break_(self):
+        return self.modules.initialize.break_(self)
 
     def inherit(self):
         return self.modules.initialize.inherit(self)

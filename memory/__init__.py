@@ -25,6 +25,7 @@ class EnginePointer:
     SUMMARIZED = 3  # 总结完毕（无法再接收新消息，接下来需要合并）
     MERGED = 4  # 合并完毕（无法再接收新消息，接下来需要清理）
     CLEANED = 5  # 清理完毕（接下来需要替换、继承）
+    BREAK = 6  # 强制中断（接下来需要替换、继承）
 
     # 总结出的临时备忘录
     summary: str = ""
@@ -81,6 +82,7 @@ class CurrentConversation:
     messages: List[Message]
     pointer: EnginePointer
     tokens: int
+    break_message: Message | None = None
 
     @staticmethod
     def create(guide, memo: str = "", recent_history: str = ""):

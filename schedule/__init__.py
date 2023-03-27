@@ -57,6 +57,7 @@ def call_until_success(fn: Callable[[], requests.Response]) -> bytes:
 
 
 def rev_chatgpt_web_history(api: RevChatGPTWeb, account: str, id_: str) -> dict:
+    assert len(id_) != 0
     wait_ms = 0
     while True:
         try:
@@ -88,6 +89,7 @@ def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = 
     wait_ms = 0
     while True:
         try:
+            print(f"send: {account} (id: {id_}, mid: {mid})")
             resp = api.send(account, msg, id_, mid)
         except requests.RequestException:
             time.sleep(10)
@@ -95,10 +97,19 @@ def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = 
         if resp.status_code == http.HTTPStatus.OK:
             r = SendResponse(**json.loads(resp.content))
             return r.mid
+        if resp.status_code == http.HTTPStatus.CONFLICT:
+            # 该帐号有负载，增加它的计数
+            call_until_success(lambda: api.counter(account, 30))
+        if resp.status_code == http.HTTPStatus.NOT_FOUND:
+            # 该帐号会话被恶意删除，增加它的计数
+            call_until_success(lambda: api.counter(account, 60))
+            raise error.ServerIsBusy(resp.content)
         if resp.status_code == http.HTTPStatus.NOT_ACCEPTABLE:
             # Something went wrong
             # 需要重新加载会话
-            print(f"send 未知错误，需要重新加载会话")
+            print(msg)
+            print(f"send {account} (id: {id_}, mid: {mid}) 未知错误，需要重新加载会话")
+            assert len(id_) != 0
             history = rev_chatgpt_web_history(api, account, id_)
             current_node = history["mapping"][history["current_node"]]
             if current_node["message"]["author"]["role"] == "user":
@@ -172,7 +183,7 @@ class Scheduler:
             # 使用网页版的免费 ChatGPT
             api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
 
-            if current.pointer.status == EnginePointer.UNINITIALIZED:
+            if current.pointer.status == EnginePointer.UNINITIALIZED or current.pointer.status == EnginePointer.BREAK:
                 # 第一次发送消息，需要新建会话，发送 guide
                 mid = rev_chatgpt_web_send(api, current.pointer.account, current.guide)
 
@@ -184,6 +195,7 @@ class Scheduler:
                     current.pointer.title,
                 ))
             elif current.pointer.status == EnginePointer.IDLE:
+                assert len(current.pointer.id) != 0
                 # 非第一次发送消息，发送最后一条消息即可
                 last_message = current.messages[-1]
                 assert last_message.sender == Message.USER  # 最后一条消息必须是用户
@@ -193,6 +205,7 @@ class Scheduler:
                 )
             else:
                 # 总 token 已满，需要压缩
+                assert len(current.pointer.id) != 0
                 assert current.messages[-1].sender == Message.AI  # 最后一条消息必须是 AI
                 mid = rev_chatgpt_web_send(
                     api, current.pointer.account, current.pointer.prompt,

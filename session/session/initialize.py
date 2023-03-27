@@ -3,7 +3,7 @@ import time
 import error
 from engine.openai_chat import OpenAIChatCompletion
 from engine.rev_chatgpt_web import RevChatGPTWeb
-from memory import CurrentConversation, EnginePointer
+from memory import CurrentConversation, EnginePointer, Message
 from session.session.internal import SessionInternal
 from tokenizer import token_len
 
@@ -62,6 +62,43 @@ def replace(self: SessionInternal):
         self.storage.replace(current)  # 保存到磁盘
 
         self.command = SessionInternal.INHERIT
+        self.status = SessionInternal.INITIALIZING
+        self.reading_num += 1
+        self.worker_cond.notify_all()
+
+
+def break_(self: SessionInternal):
+    self.logger.info("put command BREAK")
+    with self.worker_lock:
+        while not self.writeable():
+            self.worker_cond.wait()
+
+        assert self.command == SessionInternal.NONE  # 确保命令为空
+        assert self.storage.current is not None  # 确保有数据
+        assert len(self.storage.current.messages) != 0  # 确保有消息
+        assert self.storage.current.messages[-1].sender == Message.USER  # 确保最后一条是用户的
+
+        # 生引导语
+        memo = self.storage.current.memo
+        if len(self.storage.current.memo) == 0:
+            memo = '```\n<empty>\n```'
+        history, messages = self.texts[self.type].compile_history(self.storage.current.messages, self.params)
+        guide = self.texts[self.type].inherit(self.params, memo, history)
+
+        # 处理旧的 messages 备注
+        for message in messages:
+            message.remark["inherit"] = True
+
+        # 创建出数据
+        current = CurrentConversation.create(guide, memo, history)
+        current.messages = messages
+        current.break_message = self.storage.current.messages.pop()
+        current.pointer.level = self.level
+        current.pointer.title = self.id
+        current.pointer.status = EnginePointer.BREAK
+        self.storage.replace(current)  # 保存到磁盘
+
+        self.command = SessionInternal.BREAK
         self.status = SessionInternal.INITIALIZING
         self.reading_num += 1
         self.worker_cond.notify_all()
@@ -142,8 +179,19 @@ def on_inherit(self: SessionInternal):
             self.storage.current.pointer.account = account
             self.storage.current.pointer.id = new_message.id
             self.storage.current.pointer.mid = new_message.mid
-            self.storage.current.pointer.status = EnginePointer.IDLE
             self.storage.current.tokens += new_tokens + 1
+            if self.storage.current.pointer.status == EnginePointer.BREAK:
+                # 生成完了，恢复用户信息，恢复 send 流程
+                self.reading_num -= 1
+                self.storage.current.append_message(self.storage.current.break_message)  # 将要发送的消息追加到最后
+                self.storage.current.pointer.status = EnginePointer.IDLE
+                self.storage.save()  # 保存到磁盘
+
+                self.command = SessionInternal.SEND
+                self.status = SessionInternal.GENERATING
+                self.worker_cond.notify_all()
+                return
+            self.storage.current.pointer.status = EnginePointer.IDLE
             self.storage.save()
 
     # 新创建的会话一定不能超过
