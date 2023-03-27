@@ -1,6 +1,6 @@
 Please respond in one of the following ways:
 - If this is our first conversation, output a blank memo with all fields empty.
-- If we have had some previous conversations, summarize all our previous conversations in English and output them as your personal memo (up to 1000 words). Please keep any Chinese names, nicknames, or any non-translatable Chinese characters to avoid losing information.
+- If we have had some previous conversations, summarize all our previous conversations in English and output them as your personal memo (up to 300 words). Please keep any Chinese names, nicknames, or any non-translatable Chinese characters to avoid losing information.
 Output only the contents of your memo enclosed in three backticks and nothing else.
 Here is the memo template (Leave blank fields for any conversation topics not covered instead of randomly generating!):
 ```
