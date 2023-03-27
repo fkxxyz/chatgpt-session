@@ -97,14 +97,17 @@ def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = 
         if resp.status_code == http.HTTPStatus.OK:
             r = SendResponse(**json.loads(resp.content))
             return r.mid
-        if resp.status_code == http.HTTPStatus.CONFLICT:
+        elif resp.status_code == http.HTTPStatus.CONFLICT:
             # 该帐号有负载，增加它的计数
             call_until_success(lambda: api.counter(account, 30))
-        if resp.status_code == http.HTTPStatus.NOT_FOUND:
+        elif resp.status_code == http.HTTPStatus.TOO_MANY_REQUESTS:
+            # 该帐号有负载，增加它的计数
+            call_until_success(lambda: api.counter(account, 150))
+        elif resp.status_code == http.HTTPStatus.NOT_FOUND:
             # 该帐号会话被恶意删除，增加它的计数
             call_until_success(lambda: api.counter(account, 60))
             raise error.ServerIsBusy(resp.content)
-        if resp.status_code == http.HTTPStatus.NOT_ACCEPTABLE:
+        elif resp.status_code == http.HTTPStatus.NOT_ACCEPTABLE:
             # Something went wrong
             # 需要重新加载会话
             print(msg)
