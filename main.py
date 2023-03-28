@@ -45,7 +45,7 @@ def main() -> int:
     args = parser.parse_args()
 
     LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
-    log_level = logging.DEBUG
+    log_level = logging.INFO
     logging.basicConfig(level=log_level, format=LOG_FORMAT, handlers=[logging.StreamHandler(sys.stdout)])
 
     run(args.host, args.port, args.text, args.config, args.database)
