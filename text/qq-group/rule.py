@@ -42,7 +42,7 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
         messages[i].content = prune_message(messages[i])
         messages[i].tokens = token_len(messages[i].content)
         token += messages[i + 1].tokens + messages[i].tokens + 2
-        if token > 1024:
+        if token > 512:
             break
         i -= 2
     i += 2
