@@ -168,6 +168,23 @@ def handle_status():
     })
 
 
+@app.route('/api/status_all')
+def handle_status_all():
+    statuses = []
+    for session in globalObject.session_manager.list():
+        try:
+            status, tokens = session.status()
+        except error.ChatGPTSessionError as e:
+            return flask.make_response(str(e), e.HttpStatus)
+        statuses.append({
+            "id": session.asdict()['id'],
+            "status": status,
+            "tokens": tokens,
+        })
+
+    return flask.jsonify(statuses)
+
+
 @app.route('/api/memo')
 def handle_memo():
     id_ = flask.request.args.get('id')

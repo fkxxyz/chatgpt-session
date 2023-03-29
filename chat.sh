@@ -96,6 +96,24 @@ cmd_delete() {
 
 cmd_status() {
   local id="$1"
+  if [ ! "$id" ]; then
+    local json_str exit_code=0
+    json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/status_all")" || exit_code="$?"
+    if [ "$exit_code" != "0" ]; then
+      echo "$json_str"
+      return "$exit_code"
+    fi
+    local status_i tokens
+    while read -r id status_i tokens; do
+      local status=(
+        "IDLE"
+        "GENERATING"
+        "INITIALIZING"
+      )
+      printf '%s %s %s\n' "$id" "${status[status_i]}" "$tokens"
+    done < <(jq -r '.[] | "\(.id) \(.status) \(.tokens)"' <<< "$json_str")
+    return
+  fi
   local json_str exit_code=0
   json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/status?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
