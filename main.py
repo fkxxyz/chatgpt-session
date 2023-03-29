@@ -29,6 +29,7 @@ def run(host: str, port: int, text: str, config_path: str, database: str):
 
     globalObject.text = text
     globalObject.database = database
+    globalObject.scheduler = scheduler
     globalObject.session_manager = SessionManager(text, database, scheduler)
 
     from waitress import serve

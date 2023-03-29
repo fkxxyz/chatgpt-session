@@ -275,6 +275,21 @@ cmd_geti() {
   tail -1 <<< "$result" | grep -q '_$'
 }
 
+cmd_once() {
+  local msg
+  msg="$(cat)"
+  local body
+  body="$(jq --arg message "$msg" '{message: $message}' <<< '{}')"
+  local json_str exit_code=0
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
+    -H "Content-Type: application/json" \
+    --data-binary "$body" \
+    "$BASE_URL/api/once"
+  )" || exit_code="$?"
+  echo "$json_str"
+  return "$exit_code"
+}
+
 cmd_help(){
   printf 'Usage: %s COMMAND
 
@@ -291,6 +306,7 @@ Commands:
   send [id]
   get [id]
   sendi [id]
+  once
 
   help
 ' "$0"

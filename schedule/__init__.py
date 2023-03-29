@@ -179,6 +179,36 @@ class Scheduler:
 
         return OpenAIChatCompletion.__name__, ""
 
+    # 发送一次性的消息
+    def send_away(self, msg: str) -> str:
+        pointer = EnginePointer()
+        engine_, account = self.evaluate(pointer)
+        if engine_ == RevChatGPTWeb.__name__:
+            api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
+
+            # 发送消息给 ChatGPT
+            mid = rev_chatgpt_web_send(api, account, msg)
+
+            # 循环等到 ChatGPT 回复完成
+            while True:
+                new_message = GetMessageResponse.from_body(
+                    call_until_success(lambda: api.get(mid, False)))
+                if new_message.end:
+                    break
+                time.sleep(0.1)
+
+            # 删除会话
+            call_until_success(lambda: api.delete(account, new_message.id))
+            return new_message.msg
+        elif engine_ == OpenAIChatCompletion.__name__:
+            api: OpenAIChatCompletion = self.__engines[OpenAIChatCompletion.__name__]
+            return openai_chat_send(api, [engine.openai_chat.Message(
+                role=Message.USER,
+                content=msg,
+            )])
+        else:
+            raise error.NotImplementedError1(f"no such engine: f{engine_}")
+
     def send(self, current: CurrentConversation) -> str:
         assert current.pointer.engine in self.__engines
 

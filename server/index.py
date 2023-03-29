@@ -250,3 +250,16 @@ def handle_compress():
         return flask.make_response(str(e), e.HttpStatus)
 
     return flask.jsonify({})
+
+
+@app.route('/api/once', methods=['POST'])
+def handle_send_once():
+    message_info = flask.request.get_json()
+    msg_str = message_info.get('message')
+    if msg_str is None or len(msg_str) == 0:
+        return flask.make_response('error: missing message', http.HTTPStatus.BAD_REQUEST)
+    try:
+        reply = globalObject.scheduler.send_away(msg_str)
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+    return reply
