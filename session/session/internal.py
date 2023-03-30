@@ -1,3 +1,4 @@
+import copy
 import importlib
 import json
 import logging
@@ -177,18 +178,20 @@ class SessionInternal:
     def on_inherit(self):
         return self.modules.initialize.on_inherit(self)
 
-    def set_params(self, params):
+    def set_params(self, params: dict):
+        new_params = copy.deepcopy(self.params)
+        for key in params:
+            new_params[key] = params[key]
         text = self.texts[self.type]
         keys = []
         for key in text.params:
             try:
-                if id(type(params[key])) != id(type(text.params[key])):
+                if id(type(new_params[key])) != id(type(text.params[key])):
                     raise KeyError(f"invalid param: {key}: {params[key]}")
             except KeyError:
                 raise error.InvalidParamError(f"invalid param: no key: {key}")
             keys.append(key)
-        for key in params:
-            self.params[key] = params[key]
+        self.params = new_params
 
         with open(os.path.join(self.d, "index.json"), "w") as f:
             f.write(json.dumps({
