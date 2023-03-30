@@ -7,6 +7,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import List
 
+import error
 from memory import Message
 from schedule import Scheduler
 from session.storage import SessionStorage
@@ -62,6 +63,8 @@ class SessionInternal:
             importlib.import_module("session.session.send"),
             importlib.import_module("session.session.compress"),
         )
+
+        self.d: str = d
 
         with open(os.path.join(d, "index.json"), "r") as f:
             j = json.loads(f.read())
@@ -173,3 +176,23 @@ class SessionInternal:
 
     def on_inherit(self):
         return self.modules.initialize.on_inherit(self)
+
+    def set_params(self, params):
+        text = self.texts[self.type]
+        keys = []
+        for key in text.params:
+            try:
+                if id(type(params[key])) != id(type(text.params[key])):
+                    raise KeyError(f"invalid param: {key}: {params[key]}")
+            except KeyError:
+                raise error.InvalidParamError(f"invalid param: no key: {key}")
+            keys.append(key)
+        for key in params:
+            self.params[key] = params[key]
+
+        with open(os.path.join(self.d, "index.json"), "w") as f:
+            f.write(json.dumps({
+                "id": self.id,
+                "type": self.type,
+                "params": self.params,
+            }))

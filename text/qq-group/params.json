@@ -6,5 +6,6 @@
   "ai_nickname": "AI昵称",
   "ai_age": "AI年龄",
   "ai_sex": "AI性别",
+  "welcome_prompt": "欢迎语提示词",
   "level": 65536
 }

@@ -26,6 +26,9 @@ class Session:
             "params": self.__internal.params,
         }
 
+    def set_params(self, params: dict):
+        return self.__internal.set_params(params)
+
     def status(self) -> (int, int):
         return self.__internal.get_status()
 

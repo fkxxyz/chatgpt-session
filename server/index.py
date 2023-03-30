@@ -38,6 +38,21 @@ def handle_info():
     return flask.jsonify(info)
 
 
+@app.route('/api/params', methods=['POST'])
+def handle_params():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+    params = flask.request.get_json()
+    try:
+        session.set_params(params)
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+    info = session.asdict()
+    return flask.jsonify(info)
+
+
 @app.route('/api/create', methods=['PUT'])
 def handle_create():
     id_ = flask.request.args.get('id')
