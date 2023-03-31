@@ -24,6 +24,9 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
         if len(self.storage.current.messages) != 0:
             messages.append(copy.deepcopy(self.storage.current.messages[-1]))
 
+    if self.status == SessionInternal.INITIALIZING:
+        return SessionMessageResponse("", "", False)
+
     if pointer.engine == RevChatGPTWeb.__name__:
         if len(pointer.new_mid) == 0:
             if pointer.status == EnginePointer.UNINITIALIZED:
