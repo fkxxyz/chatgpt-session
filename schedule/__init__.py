@@ -52,7 +52,7 @@ def call_until_success(fn: Callable[[], requests.Response]) -> bytes:
             continue
         if resp.status_code != http.HTTPStatus.OK:
             print(f"响应返回错误 {resp.status_code} ，终止： {resp.content.decode()}")
-            raise RuntimeError(f"响应返回错误 {resp.status_code}： {resp.content.decode()}")
+            raise error.NotFoundError(resp.content.decode())
 
         return resp.content
 

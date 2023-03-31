@@ -171,52 +171,18 @@ def on_merge(self: SessionInternal):
             self.worker_cond.wait()
         self.reading_num += 1
 
-    while True:
-        # 先评估在哪个引擎哪个帐号处理信息
-        engine, account = self.scheduler.evaluate(self.storage.current.pointer)
+        while self.writing or self.reading_num > 1:
+            self.worker_cond.wait()
+        self.storage.current.pointer.prompt = \
+            self.texts[self.type].merge(
+                self.params,
+                self.storage.current.memo,
+                self.storage.current.pointer.summary,
+            )
+        self.storage.save()
 
-        with self.worker_lock:
-            while self.writing or self.reading_num > 1:
-                self.worker_cond.wait()
-            self.storage.current.pointer.engine = engine
-            self.storage.current.pointer.account = account
-            self.storage.current.pointer.prompt = \
-                self.texts[self.type].merge(
-                    self.params,
-                    self.storage.current.memo,
-                    self.storage.current.pointer.summary,
-                )
-            self.storage.save()
-
-        # 发送信息，得到新信息的 mid
-        try:
-            reply = self.scheduler.send(self.storage.current)
-            break
-        except (error.Unauthorized, error.ServerIsBusy) as err:
-            self.logger.error("on_send() send error: %s", err)
-            self.storage.current.pointer.engine = ""
-            self.storage.current.pointer.account = ""
-            time.sleep(1)
-
-    if self.storage.current.pointer.engine == OpenAIChatCompletion.__name__:
-        pass
-    if self.storage.current.pointer.engine == RevChatGPTWeb.__name__:
-        mid = reply
-
-        # 记录得到新消息的 mid
-        with self.worker_lock:
-            while self.writing or self.reading_num > 1:
-                self.worker_cond.wait()
-            self.storage.current.pointer.new_mid = mid
-            self.storage.save()
-
-        # 循环等到 ChatGPT 回复完成
-        while True:
-            new_message = self.scheduler.get(self.storage.current.pointer)
-            if new_message.end:
-                break
-            time.sleep(0.1)
-        reply = new_message.msg
+    # 用一次性发送接口合并出备忘录
+    reply = self.scheduler.send_away(self.storage.current.pointer.prompt)
 
     # 得到备忘录，确保备忘录格式正确
     memo = "```\n" + reply.strip("`\n") + "\n```"
@@ -246,7 +212,10 @@ def on_clean(self: SessionInternal):
         self.reading_num += 1
 
     # 清理会话
-    self.scheduler.clean(self.storage.current.pointer)
+    try:
+        self.scheduler.clean(self.storage.current.pointer)
+    except error.NotFoundError:
+        pass
 
     # 清理完了，进入继承状态
     with self.worker_lock:
