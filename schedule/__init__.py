@@ -92,6 +92,7 @@ def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = 
         try:
             print(f"send: {account} (id: {id_}, mid: {mid})")
             resp = api.send(account, msg, id_, mid)
+            print(f"resp ${resp.status_code}: {account} (id: {id_}, mid: {mid})")
         except requests.RequestException:
             time.sleep(10)
             continue
