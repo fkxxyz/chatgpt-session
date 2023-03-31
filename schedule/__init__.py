@@ -86,13 +86,15 @@ def rev_chatgpt_web_history(api: RevChatGPTWeb, account: str, id_: str) -> dict:
         time.sleep(float(wait_ms) / 1000)
 
 
-def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = '', mid: str = '') -> str:
+def rev_chatgpt_web_send(
+        api: RevChatGPTWeb, account: str, msg: str, id_: str = '', mid: str = '',
+        no_wait: bool = False) -> str:
     wait_ms = 0
     while True:
         try:
             print(f"send: {account} (id: {id_}, mid: {mid})")
             resp = api.send(account, msg, id_, mid)
-            print(f"resp ${resp.status_code}: {account} (id: {id_}, mid: {mid})")
+            print(f"resp {resp.status_code}: {account} (id: {id_}, mid: {mid})")
         except requests.RequestException:
             time.sleep(10)
             continue
@@ -123,6 +125,8 @@ def rev_chatgpt_web_send(api: RevChatGPTWeb, account: str, msg: str, id_: str = 
                 mid = current_node["id"]
             print(f"重新加载会话成功，得到新的 mid： {mid}")
             continue
+        if no_wait:
+            raise error.ServerIsBusy(resp.content)
         sleep_strategy = sleep_strategies.get(resp.status_code)
         if sleep_strategy is None:
             if resp.status_code == http.HTTPStatus.UNAUTHORIZED:
@@ -183,33 +187,40 @@ class Scheduler:
 
     # 发送一次性的消息
     def send_away(self, msg: str) -> str:
-        pointer = EnginePointer()
-        engine_, account = self.evaluate(pointer)
-        if engine_ == RevChatGPTWeb.__name__:
-            api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
+        while True:
+            pointer = EnginePointer()
+            engine_, account = self.evaluate(pointer)
+            try:
+                if engine_ == RevChatGPTWeb.__name__:
+                    api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
 
-            # 发送消息给 ChatGPT
-            mid = rev_chatgpt_web_send(api, account, msg)
+                    # 发送消息给 ChatGPT
+                    mid = rev_chatgpt_web_send(api, account, msg, no_wait=True)
 
-            # 循环等到 ChatGPT 回复完成
-            while True:
-                new_message = GetMessageResponse.from_body(
-                    call_until_success(lambda: api.get(mid, False)))
-                if new_message.end:
-                    break
-                time.sleep(0.1)
+                    # 循环等到 ChatGPT 回复完成
+                    while True:
+                        new_message = GetMessageResponse.from_body(
+                            call_until_success(lambda: api.get(mid, False)))
+                        if new_message.end:
+                            break
+                        time.sleep(0.1)
 
-            # 删除会话
-            call_until_success(lambda: api.delete(account, new_message.id))
-            return new_message.msg
-        elif engine_ == OpenAIChatCompletion.__name__:
-            api: OpenAIChatCompletion = self.__engines[OpenAIChatCompletion.__name__]
-            return openai_chat_send(api, [engine.openai_chat.Message(
-                role=Message.USER,
-                content=msg,
-            )])
-        else:
-            raise error.NotImplementedError1(f"no such engine: f{engine_}")
+                    # 删除会话
+                    call_until_success(lambda: api.delete(account, new_message.id))
+                    return new_message.msg
+                elif engine_ == OpenAIChatCompletion.__name__:
+                    api: OpenAIChatCompletion = self.__engines[OpenAIChatCompletion.__name__]
+                    return openai_chat_send(api, [engine.openai_chat.Message(
+                        role=Message.USER,
+                        content=msg,
+                    )])
+                else:
+                    raise error.NotImplementedError1(f"no such engine: f{engine_}")
+            except (error.Unauthorized, error.ServerIsBusy) as err:
+                print(f"send_away 错误： {err}")
+                print(f"等待 1 秒后重试 ...")
+                time.sleep(1)
+                pass
 
     def send(self, current: CurrentConversation) -> str:
         assert current.pointer.engine in self.__engines
