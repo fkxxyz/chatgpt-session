@@ -29,6 +29,7 @@ sleep_strategies = {
     403: SleepStrategy(10000, 2, 120000),
     409: SleepStrategy(10000, 1, 10000),
     500: SleepStrategy(10000, 2, 120000),
+    502: SleepStrategy(10000, 2, 120000),
     503: SleepStrategy(10000, 2, 120000),
     522: SleepStrategy(10000, 2, 120000),
     524: SleepStrategy(10000, 2, 60000),
