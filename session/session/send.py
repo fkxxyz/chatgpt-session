@@ -136,6 +136,10 @@ def on_send(self: SessionInternal):
             self.storage.current.pointer.engine = ""
             self.storage.current.pointer.account = ""
 
+            if self.storage.current.pointer.status == EnginePointer.UNINITIALIZED:
+                time.sleep(1)
+                continue
+
             # 帐号问题导致消息记录需要丢弃
             with self.worker_lock:
                 self.status = SessionInternal.INITIALIZING
