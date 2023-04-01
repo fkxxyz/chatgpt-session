@@ -1,3 +1,4 @@
+import copy
 from typing import List
 
 from memory import Message
@@ -22,6 +23,8 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
     if len(messages) < 2:  # 确保至少有两条消息
         return "<empty>", []
     i = len(messages) - 2
+
+    origin_messages = copy.deepcopy(messages)
 
     # 最后两条消息，如果 token 数超过 512，则精简消息，优先精简用户的消息
     token = messages[i].tokens + messages[i + 1].tokens + 2
@@ -48,10 +51,9 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
     i += 2
 
     history = ""
-    messages = messages[i:]
-    for message in messages:
+    for message in messages[i:]:
         history += sender_map[message.sender] + ': ' + message.content + "\n"
-    return history, messages
+    return history, origin_messages[i:]
 
 
 def compile_message(message: Message) -> str:
