@@ -101,10 +101,17 @@ def on_summarize(self: SessionInternal):
             reply = self.scheduler.send(self.storage.current)
             break
         except (error.Unauthorized, error.ServerIsBusy) as err:
-            self.logger.error("on_send() send error: %s", err)
+            self.logger.error("on_summarize() send error: %s", err)
             self.storage.current.pointer.engine = ""
             self.storage.current.pointer.account = ""
-            time.sleep(1)
+
+            # 帐号问题导致消息记录需要丢弃
+            with self.worker_lock:
+                self.status = SessionInternal.INITIALIZING
+                self.reading_num -= 1
+            self.break_()
+            self.logger.info("on_summarize() leave")
+            return
 
     if self.storage.current.pointer.engine == OpenAIChatCompletion.__name__:
         pass

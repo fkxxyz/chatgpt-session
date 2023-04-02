@@ -76,7 +76,6 @@ def break_(self: SessionInternal):
         assert self.command == SessionInternal.NONE  # 确保命令为空
         assert self.storage.current is not None  # 确保有数据
         assert len(self.storage.current.messages) != 0  # 确保有消息
-        assert self.storage.current.messages[-1].sender == Message.USER  # 确保最后一条是用户的
 
         # 生引导语
         memo = self.storage.current.memo
@@ -92,7 +91,10 @@ def break_(self: SessionInternal):
         # 创建出数据
         current = CurrentConversation.create(guide, memo, history)
         current.messages = messages
-        current.break_message = self.storage.current.messages.pop()
+        if self.storage.current.messages[-1].sender == Message.USER:
+            current.break_message = self.storage.current.messages.pop()
+        else:
+            current.break_message = None
         current.pointer.level = self.level
         current.pointer.title = self.id
         current.pointer.status = EnginePointer.BREAK
@@ -180,7 +182,8 @@ def on_inherit(self: SessionInternal):
             self.storage.current.pointer.id = new_message.id
             self.storage.current.pointer.mid = new_message.mid
             self.storage.current.tokens += new_tokens + 1
-            if self.storage.current.pointer.status == EnginePointer.BREAK:
+            if self.storage.current.pointer.status == EnginePointer.BREAK and \
+                    self.storage.current.break_message is not None:
                 # 生成完了，恢复用户信息，恢复 send 流程
                 self.reading_num -= 1
                 self.storage.current.append_message(self.storage.current.break_message)  # 将要发送的消息追加到最后
