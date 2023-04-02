@@ -26,7 +26,7 @@ def main_loop(self: SessionInternal):
         else:
             self.inherit()
     elif self.storage.current.pointer.status == EnginePointer.BREAK:
-        self.inherit()
+        self.break_()
     else:
         if len(self.storage.current.messages) != 0:
             if self.storage.current.messages[-1].sender == Message.USER:
