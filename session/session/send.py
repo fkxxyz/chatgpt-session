@@ -24,13 +24,14 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
         if len(self.storage.current.messages) != 0:
             messages.append(copy.deepcopy(self.storage.current.messages[-1]))
 
+    if pointer.status > EnginePointer.IDLE:
+        # 压缩中，直接返回最后 AI 回复的消息
+        assert len(messages) != 0
+        assert messages[-1].sender == Message.AI
+        return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+
     if pointer.engine == RevChatGPTWeb.__name__:
         if self.status == SessionInternal.INITIALIZING:
-            if pointer.status > EnginePointer.IDLE:
-                # 压缩中，直接返回最后 AI 回复的消息
-                assert len(messages) != 0
-                assert messages[-1].sender == Message.AI
-                return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
             if len(messages) == 0:
                 if len(pointer.new_mid) == 0:
                     # 刚创建的会话
@@ -86,6 +87,7 @@ def append_msg(self: SessionInternal, msg: str, remark: dict):
         message = Message("", Message.USER, msg, token_len(msg), remark)
         message.content = self.texts[self.type].rule.compile_message(message)
         self.storage.current.append_message(message)  # 将要发送的消息追加到最后
+        self.storage.current.pointer.new_mid = ""  # 清空新消息的ID
         self.storage.save()  # 保存到磁盘
 
         self.command = SessionInternal.SEND
