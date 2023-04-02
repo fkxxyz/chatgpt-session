@@ -24,46 +24,50 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
         if len(self.storage.current.messages) != 0:
             messages.append(copy.deepcopy(self.storage.current.messages[-1]))
 
-    if self.status == SessionInternal.INITIALIZING:
-        return SessionMessageResponse("", "", False)
-
     if pointer.engine == RevChatGPTWeb.__name__:
-        if len(pointer.new_mid) == 0:
-            if pointer.status == EnginePointer.UNINITIALIZED:
-                return SessionMessageResponse("", "", False)
-            if len(messages) == 0:
-                return SessionMessageResponse("", "", True)
-            elif messages[-1].sender == Message.AI:
+        if self.status == SessionInternal.INITIALIZING:
+            if pointer.status > EnginePointer.IDLE:
+                # 压缩中，直接返回最后 AI 回复的消息
+                assert len(messages) != 0
+                assert messages[-1].sender == Message.AI
                 return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
-            else:
-                return SessionMessageResponse("", "", False)
-        if pointer.mid == pointer.new_mid:
-            if pointer.status == EnginePointer.UNINITIALIZED:
-                return SessionMessageResponse("", "", False)
             if len(messages) == 0:
-                return SessionMessageResponse("", "", True)
-            if messages[-1].sender == Message.AI:
-                return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+                if len(pointer.new_mid) == 0:
+                    # 刚创建的会话
+                    return SessionMessageResponse("", "", False)
+                else:
+                    # 刚创建的会话，且正在生成中
+                    new_message = self.scheduler.get(pointer)
+                    return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
             else:
+                # 继承中，直接返回最后 AI 回复的消息
+                assert messages[-1].sender == Message.AI
+                return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+        if self.status == SessionInternal.IDLE:
+            # 空闲状态，直接返回最后 AI 回复的消息
+            assert messages[-1].sender == Message.AI
+            return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+        if self.status == SessionInternal.GENERATING:
+            if len(pointer.new_mid) == 0:
+                # 正在生成中，但是还没有生成出来
                 return SessionMessageResponse("", "", False)
-        new_message = self.scheduler.get(pointer)
-        return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
-    elif pointer.engine == OpenAIChatCompletion.__name__:
-        if pointer.status == EnginePointer.UNINITIALIZED:
-            return SessionMessageResponse("", "", False)
+            else:
+                new_message = self.scheduler.get(pointer)
+                return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
+        assert False  # 未知状态
+
+    if pointer.status != EnginePointer.IDLE:
         if len(messages) == 0:
-            return SessionMessageResponse("", "", True)
-        if messages[-1].sender == Message.AI:
-            return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
-        return SessionMessageResponse("", "", False)
-    else:
-        if pointer.status == EnginePointer.UNINITIALIZED:
             return SessionMessageResponse("", "", False)
-        if len(messages) == 0:
-            return SessionMessageResponse("", "", True)
-        if messages[-1].sender == Message.AI:
-            return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+        assert messages[-1].sender == Message.AI
+        return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+    if self.status == SessionInternal.GENERATING:
         return SessionMessageResponse("", "", False)
+    if len(messages) == 0:
+        return SessionMessageResponse("", "", False)
+    if messages[-1].sender == Message.AI:
+        return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+    return SessionMessageResponse("", "", False)
 
 
 def append_msg(self: SessionInternal, msg: str, remark: dict):
