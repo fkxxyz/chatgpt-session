@@ -12,13 +12,24 @@ from tokenizer import token_len
 
 def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
     with self.worker_lock:
-        if stop and self.status == SessionInternal.GENERATING:
-            self.status = SessionInternal.STOPPING
-            while self.status == SessionInternal.STOPPING:
-                self.worker_cond.wait()
+        while True:
+            wait = False
 
-        while not self.readable():
+            if stop and self.status == SessionInternal.GENERATING:
+                self.status = SessionInternal.STOPPING
+                if self.status == SessionInternal.STOPPING:
+                    wait = True
+
+            if not self.readable():
+                wait = True
+
+            if self.storage.current.break_message is not None:
+                wait = True
+
+            if not wait:
+                break
             self.worker_cond.wait()
+        status = self.status
         pointer = copy.deepcopy(self.storage.current.pointer)
         messages: List[Message] = []
         is_new_created = len(self.storage.current.memo) == 0
@@ -34,7 +45,7 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
             return SessionMessageResponse("", "", False)
 
     if pointer.engine == RevChatGPTWeb.__name__:
-        if self.status == SessionInternal.INITIALIZING:
+        if status == SessionInternal.INITIALIZING:
             if is_new_created:
                 if len(pointer.new_mid) == 0:
                     # 刚创建的会话
@@ -47,11 +58,11 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
                 # 继承中，直接返回最后 AI 回复的消息
                 assert messages[-1].sender == Message.AI
                 return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
-        if self.status == SessionInternal.IDLE:
+        if status == SessionInternal.IDLE:
             # 空闲状态，直接返回最后 AI 回复的消息
             assert messages[-1].sender == Message.AI
             return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
-        if self.status == SessionInternal.GENERATING:
+        if status == SessionInternal.GENERATING:
             if len(pointer.new_mid) == 0:
                 # 正在生成中，但是还没有生成出来
                 return SessionMessageResponse("", "", False)
@@ -71,7 +82,7 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
             return SessionMessageResponse("", "", False)
         assert messages[-1].sender == Message.AI
         return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
-    if self.status == SessionInternal.GENERATING:
+    if status == SessionInternal.GENERATING:
         return SessionMessageResponse("", "", False)
     if len(messages) == 0:
         return SessionMessageResponse("", "", False)
@@ -107,9 +118,7 @@ def append_msg(self: SessionInternal, msg: str, remark: dict):
 def send(self: SessionInternal):
     self.logger.info("put command SEND")
     with self.worker_lock:
-        while self.status != SessionInternal.IDLE:  # 确保空闲状态
-            self.worker_cond.wait()
-        while not self.readable():
+        while self.status != SessionInternal.IDLE or not self.readable():  # 确保空闲状态
             self.worker_cond.wait()
 
         assert self.command == SessionInternal.NONE  # 确保命令为空
@@ -131,6 +140,7 @@ def on_send(self: SessionInternal):
         while not self.readable():
             self.worker_cond.wait()
         self.reading_num += 1
+        self.storage.current.break_message = None
 
     while True:
         engine, account = self.scheduler.evaluate(self.storage.current.pointer)
