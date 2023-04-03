@@ -27,8 +27,10 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
     if pointer.status > EnginePointer.IDLE:
         # 压缩中，直接返回最后 AI 回复的消息
         assert len(messages) != 0
-        assert messages[-1].sender == Message.AI
-        return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+        if messages[-1].sender == Message.AI:
+            return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+        else:
+            return SessionMessageResponse("", "", False)
 
     if pointer.engine == RevChatGPTWeb.__name__:
         if self.status == SessionInternal.INITIALIZING:
