@@ -31,12 +31,16 @@ class GetMessageResponse:
     @staticmethod
     def from_body(body: bytes):
         r = json.loads(body)
-        return GetMessageResponse(
-            r["conversation_id"],
-            r["message"]["id"],
-            r["message"]["content"]["parts"][0],
-            r["finished"],
-        )
+        try:
+            return GetMessageResponse(
+                r["conversation_id"],
+                r["message"]["id"],
+                r["message"]["content"]["parts"][0],
+                r["finished"],
+            )
+        except Exception as err:
+            print(body.decode())
+            raise err
 
 
 class RevChatGPTWeb:

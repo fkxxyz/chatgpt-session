@@ -21,6 +21,7 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
             self.worker_cond.wait()
         pointer = copy.deepcopy(self.storage.current.pointer)
         messages: List[Message] = []
+        is_new_created = len(self.storage.current.memo) == 0
         if len(self.storage.current.messages) != 0:
             messages.append(copy.deepcopy(self.storage.current.messages[-1]))
 
@@ -34,7 +35,7 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
 
     if pointer.engine == RevChatGPTWeb.__name__:
         if self.status == SessionInternal.INITIALIZING:
-            if len(messages) == 0:
+            if is_new_created:
                 if len(pointer.new_mid) == 0:
                     # 刚创建的会话
                     return SessionMessageResponse("", "", False)
@@ -55,7 +56,13 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
                 # 正在生成中，但是还没有生成出来
                 return SessionMessageResponse("", "", False)
             else:
-                new_message = self.scheduler.get(pointer)
+                try:
+                    new_message = self.scheduler.get(pointer)
+                except Exception as err:
+                    print(err)
+                    print(self.params)
+                    print(pointer)
+                    return SessionMessageResponse("", "", False)
                 return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
         assert False  # 未知状态
 

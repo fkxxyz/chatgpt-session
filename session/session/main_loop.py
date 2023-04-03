@@ -1,4 +1,6 @@
 import threading
+import time
+from typing import Callable
 
 from memory import EnginePointer, Message
 from session.session.internal import SessionInternal
@@ -50,8 +52,28 @@ def main_loop(self: SessionInternal):
             command = self.command
             self.logger.info("get command %s", SessionInternal.CMD_STR[command])
             self.command = SessionInternal.NONE
+        if self.command == SessionInternal.EXIT:
+            self.worker.join()  # 确保工作线程完全结束
+            break
         fn = cmd_map.get(command)
         assert fn is not None
         self.worker.join()  # 确保工作线程完全结束
-        self.worker = threading.Thread(target=fn)
+        self.worker = threading.Thread(target=worker_fn, args=(self, fn))
         self.worker.start()  # 启动新线程执行命令
+
+
+def worker_fn(self: SessionInternal, fn: Callable):
+    # 重试 3 次执行 fn
+    for i in range(3):
+        try:
+            fn()
+            return
+        except Exception as e:
+            self.logger.error("worker thread failed: %s", str(e))
+
+            if i == 2:
+                self.logger.error("worker thread exception exited.")
+                raise e
+
+            time.sleep(1 << i)
+            self.logger.error("worker thread retrying ...")

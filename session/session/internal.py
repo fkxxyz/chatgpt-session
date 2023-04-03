@@ -40,6 +40,7 @@ class SessionInternal:
     INHERIT = 5
     CLEAN = 6
     BREAK = 7
+    EXIT = 8
     CMD_STR = {
         NONE: "NONE",
         CREATE: "CREATE",
@@ -49,6 +50,7 @@ class SessionInternal:
         INHERIT: "INHERIT",
         CLEAN: "CLEAN",
         BREAK: "BREAK",
+        EXIT: "EXIT",
     }
 
     # 状态
