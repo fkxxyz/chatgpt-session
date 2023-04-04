@@ -189,9 +189,9 @@ class Scheduler:
         return OpenAIChatCompletion.__name__, ""
 
     # 发送一次性的消息
-    def send_away(self, msg: str) -> str:
+    def send_away(self, msg: str, level: int) -> str:
         while True:
-            pointer = EnginePointer()
+            pointer = EnginePointer(level=level)
             engine_, account = self.evaluate(pointer)
             try:
                 if engine_ == RevChatGPTWeb.__name__:

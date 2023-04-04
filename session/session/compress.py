@@ -189,7 +189,7 @@ def on_merge(self: SessionInternal):
         self.storage.save()
 
     # 用一次性发送接口合并出备忘录
-    reply = self.scheduler.send_away(self.storage.current.pointer.prompt)
+    reply = self.scheduler.send_away(self.storage.current.pointer.prompt, self.level)
 
     # 得到备忘录，确保备忘录格式正确
     memo = "```\n" + reply.strip("`\n") + "\n```"

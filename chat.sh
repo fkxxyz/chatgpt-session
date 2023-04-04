@@ -289,6 +289,7 @@ cmd_geti() {
 }
 
 cmd_once() {
+  local level="$1"
   local msg
   msg="$(cat)"
   local body
@@ -297,7 +298,7 @@ cmd_once() {
   json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
     -H "Content-Type: application/json" \
     --data-binary "$body" \
-    "$BASE_URL/api/once"
+    "$BASE_URL/api/once?level=${level}"
   )" || exit_code="$?"
   echo "$json_str"
   return "$exit_code"
