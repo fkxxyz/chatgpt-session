@@ -26,6 +26,12 @@ class Session:
             "params": self.__internal.params,
         }
 
+    def exit(self):
+        return self.__internal.exit()
+
+    def reload(self):
+        return self.__internal.reload()
+
     def set_params(self, params: dict):
         return self.__internal.set_params(params)
 

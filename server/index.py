@@ -112,6 +112,21 @@ def handle_delete():
     return flask.jsonify({})
 
 
+@app.route('/api/reload', methods=['PATCH'])
+def handle_reload():
+    id_ = flask.request.args.get('id')
+    session, r = get_session_query(id_)
+    if r is not None:
+        return r
+
+    try:
+        session.reload()
+    except error.ChatGPTSessionError as e:
+        return flask.make_response(str(e), e.HttpStatus)
+
+    return flask.jsonify({})
+
+
 @app.route('/api/send', methods=['POST'])
 def handle_send():
     id_ = flask.request.args.get('id')

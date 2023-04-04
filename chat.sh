@@ -94,6 +94,19 @@ cmd_delete() {
   jq -r '.' <<< "$json_str"
 }
 
+cmd_reload() {
+  local id="$1"
+  local json_str exit_code=0
+  json_str="$(
+    curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
+      -X PATCH --data-binary "$params" "$BASE_URL/api/reload?id=${id}")" || exit_code="$?"
+  if [ "$exit_code" != "0" ]; then
+    echo "$json_str"
+    return "$exit_code"
+  fi
+  jq -r '.' <<< "$json_str"
+}
+
 cmd_status() {
   local id="$1"
   if [ ! "$id" ]; then
@@ -298,6 +311,7 @@ Commands:
   info [id]
   create <id> <type> <<< <params>
   inherit <id> <type> <<< <data>
+  reload <id>
   delete <id>
   status [id]
   memo [id]

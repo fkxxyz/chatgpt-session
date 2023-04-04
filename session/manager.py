@@ -193,6 +193,7 @@ class SessionManager:
 
         self.__lock.acquire()
         try:
+            self.__sessions[id_].exit()
             del self.__sessions[id_]
             suffix = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
             os.rename(os.path.join(self.__database, id_), os.path.join(self.__database, f".{id_}.{suffix}"))

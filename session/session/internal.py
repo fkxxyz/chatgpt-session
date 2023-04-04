@@ -41,6 +41,7 @@ class SessionInternal:
     CLEAN = 6
     BREAK = 7
     EXIT = 8
+    RELOAD = 9
     CMD_STR = {
         NONE: "NONE",
         CREATE: "CREATE",
@@ -51,6 +52,7 @@ class SessionInternal:
         CLEAN: "CLEAN",
         BREAK: "BREAK",
         EXIT: "EXIT",
+        RELOAD: "RELOAD",
     }
 
     # 状态
@@ -82,6 +84,7 @@ class SessionInternal:
         self.storage: SessionStorage = SessionStorage(d, self.type, self.params)
         self.main_loop: threading.Thread = threading.Thread(target=self.main_loop)
         self.worker: threading.Thread = threading.Thread()  # 执行命令用的线程
+        self.worker.start()
 
         self.status: int = SessionInternal.IDLE
         self.command: int = SessionInternal.NONE
@@ -114,6 +117,12 @@ class SessionInternal:
 
     def create(self):
         return self.modules.initialize.create(self)
+
+    def exit(self):
+        return self.modules.main_loop.exit_(self)
+
+    def reload(self):
+        return self.modules.main_loop.reload(self)
 
     def replace(self):
         return self.modules.initialize.replace(self)
