@@ -69,3 +69,10 @@ class NotAcceptable(ChatGPTSessionError):
 
     def __init__(self, *args, **kwargs):
         pass
+
+
+class TooLarge(ChatGPTSessionError):
+    HttpStatus = http.HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+
+    def __init__(self, *args, **kwargs):
+        pass

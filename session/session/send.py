@@ -92,6 +92,9 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
 
 
 def append_msg(self: SessionInternal, msg: str, remark: dict):
+    t_len = token_len(msg)
+    if t_len > 1576:
+        raise error.TooLarge("message too long: " + str(t_len) + " > 1576")
     with self.worker_lock:
         while self.status != SessionInternal.IDLE:  # 确保空闲状态
             self.worker_cond.wait()

@@ -12,6 +12,7 @@ import error
 from engine.openai_chat import OpenAIChatCompletion
 from engine.rev_chatgpt_web import RevChatGPTWeb, AccountInfo, SendResponse, GetMessageResponse
 from memory import CurrentConversation, Message, EnginePointer
+from tokenizer import token_len
 
 
 def account_load(account: AccountInfo) -> int:
@@ -90,6 +91,7 @@ def rev_chatgpt_web_history(api: RevChatGPTWeb, account: str, id_: str) -> dict:
 def rev_chatgpt_web_send(
         api: RevChatGPTWeb, account: str, msg: str, id_: str = '', mid: str = '',
         no_wait: bool = False) -> str:
+    retry_count = 0
     wait_ms = 0
     while True:
         try:
@@ -115,11 +117,20 @@ def rev_chatgpt_web_send(
             call_until_success(lambda: api.counter(account, 60))
             raise error.ServerIsBusy(resp.content)
         elif resp.status_code == http.HTTPStatus.NOT_ACCEPTABLE:
+            if token_len(msg) > 1576:
+                raise error.TooLarge(resp.content)
             # Something went wrong
             # 需要重新加载会话
             print(msg)
             print(f"send {account} (id: {id_}, mid: {mid}) 未知错误，需要重新加载会话")
-            assert len(id_) != 0
+            retry_count += 1
+            if retry_count > 3:
+                print(f"重试次数超过 3 次，放弃")
+                raise error.ServerIsBusy(resp.content)
+            if len(id_) == 0:
+                print(f"准备重新发送")
+                time.sleep(1)
+                continue
             history = rev_chatgpt_web_history(api, account, id_)
             current_node = history["mapping"][history["current_node"]]
             if current_node["message"]["author"]["role"] == "user":
@@ -127,6 +138,7 @@ def rev_chatgpt_web_send(
             else:
                 mid = current_node["id"]
             print(f"重新加载会话成功，得到新的 mid： {mid}")
+            time.sleep(1)
             continue
         if no_wait:
             raise error.ServerIsBusy(resp.content)
@@ -190,6 +202,9 @@ class Scheduler:
 
     # 发送一次性的消息
     def send_away(self, msg: str, level: int) -> str:
+        t_len = token_len(msg)
+        if t_len > 1576:
+            raise error.TooLarge("message too long: " + str(t_len) + " > 1576")
         while True:
             pointer = EnginePointer(level=level)
             engine_, account = self.evaluate(pointer)

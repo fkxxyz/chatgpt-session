@@ -4,7 +4,9 @@ import error
 from engine.openai_chat import OpenAIChatCompletion
 from engine.rev_chatgpt_web import RevChatGPTWeb
 from memory import EnginePointer
+from session.session.initialize import prune_memo
 from session.session.internal import SessionInternal
+from tokenizer import token_len
 
 
 def force_compress(self):
@@ -189,7 +191,26 @@ def on_merge(self: SessionInternal):
         self.storage.save()
 
     # 用一次性发送接口合并出备忘录
-    reply = self.scheduler.send_away(self.storage.current.pointer.prompt, self.level)
+    try:
+        reply = self.scheduler.send_away(self.storage.current.pointer.prompt, self.level)
+    except error.TooLarge:
+        self.logger.error("on_merge() send too large. prune summary ...")
+        summary = prune_memo(self.storage.current.pointer.summary)
+        memo = self.storage.current.memo
+        if token_len(summary + self.storage.current.memo) > 1152:
+            memo = prune_memo(self.storage.current.memo)
+        with self.worker_lock:
+            while self.writing or self.reading_num > 1:
+                self.worker_cond.wait()
+            self.storage.current.pointer.summary = summary
+            self.storage.current.memo = memo
+            self.storage.save()
+            self.reading_num -= 1
+            self.command = SessionInternal.MERGE
+            self.status = SessionInternal.INITIALIZING
+            self.worker_cond.notify_all()
+        self.logger.info("on_merge() leave")
+        return
 
     # 得到备忘录，确保备忘录格式正确
     memo = "```\n" + reply.strip("`\n") + "\n```"

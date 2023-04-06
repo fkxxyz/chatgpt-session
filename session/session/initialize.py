@@ -109,9 +109,7 @@ def break_(self: SessionInternal):
 def inherit(self: SessionInternal):
     self.logger.info("put command INHERIT")
     with self.worker_lock:
-        while self.status != SessionInternal.IDLE:  # 确保空闲状态
-            self.worker_cond.wait()
-        while not self.readable():
+        while self.status != SessionInternal.IDLE or not self.readable():  # 确保空闲状态
             self.worker_cond.wait()
 
         assert self.command == SessionInternal.NONE  # 确保命令为空
@@ -123,6 +121,32 @@ def inherit(self: SessionInternal):
         self.status = SessionInternal.INITIALIZING
         self.reading_num += 1
         self.worker_cond.notify_all()
+
+
+def prune_memo(memo: str) -> str:
+    token_sum = token_len(memo)
+    memo_lines = memo.splitlines()
+    memo_line_flags = [[False, index, token_len(memo_lines[index]) if memo_lines[index].startswith("- ") else 0]
+                       for index in range(len(memo_lines))]
+
+    # 按 token 长度从大到小排序
+    memo_line_flag_indexes = list(range(len(memo_line_flags)))
+    memo_line_flag_indexes.sort(key=lambda index: memo_line_flags[index][2], reverse=True)
+
+    # 逐步标记删除最长的行
+    i = 0
+    while token_sum > 576 and i < len(memo_line_flags):
+        memo_line_flags[memo_line_flag_indexes[i]][0] = True
+        token_sum -= memo_line_flags[memo_line_flag_indexes[i]][2]
+        i += 1
+
+    # 将未删除的行拼接起来
+    new_memo = ""
+    for flag in memo_line_flags:
+        if not flag[0]:
+            new_memo += memo_lines[flag[1]] + "\n"
+
+    return new_memo.strip()
 
 
 def on_inherit(self: SessionInternal):
@@ -143,10 +167,22 @@ def on_inherit(self: SessionInternal):
             reply = self.scheduler.send(self.storage.current)
             break
         except (error.Unauthorized, error.ServerIsBusy) as err:
-            self.logger.error("on_send() send error: %s", err)
+            self.logger.error("on_inherit() send error: %s", err)
             self.storage.current.pointer.engine = ""
             self.storage.current.pointer.account = ""
             time.sleep(1)
+        except error.TooLarge:
+            self.logger.error("on_inherit() send too large. prune memo ...")
+            memo = prune_memo(self.storage.current.memo)
+            with self.worker_lock:
+                while self.writing or self.reading_num > 1:
+                    self.worker_cond.wait()
+                self.storage.current.pointer.memo = memo
+                self.storage.save()
+                self.reading_num -= 1
+            self.replace()
+            self.logger.info("on_inherit() leave")
+            return
 
     if self.storage.current.pointer.engine == OpenAIChatCompletion.__name__:
         with self.worker_lock:
@@ -193,6 +229,7 @@ def on_inherit(self: SessionInternal):
                 self.command = SessionInternal.SEND
                 self.status = SessionInternal.GENERATING
                 self.worker_cond.notify_all()
+                self.logger.info("on_inherit() leave")
                 return
             self.storage.current.pointer.status = EnginePointer.IDLE
             self.storage.save()
