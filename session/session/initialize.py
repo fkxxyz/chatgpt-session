@@ -55,6 +55,7 @@ def replace(self: SessionInternal):
 
         # 创建出数据
         current = CurrentConversation.create(guide, memo, history)
+        current.queue_message = self.storage.current.queue_message
         current.messages = messages
         current.pointer.level = self.level
         current.pointer.title = self.id
@@ -217,12 +218,17 @@ def on_inherit(self: SessionInternal):
             self.storage.current.pointer.account = account
             self.storage.current.pointer.id = new_message.id
             self.storage.current.pointer.mid = new_message.mid
+            self.storage.current.pointer.new_mid = ""
             self.storage.current.tokens += new_tokens + 1
-            if self.storage.current.pointer.status == EnginePointer.BREAK and \
-                    self.storage.current.break_message is not None:
+            if (self.storage.current.pointer.status == EnginePointer.BREAK and
+                self.storage.current.break_message is not None) or \
+                    self.storage.current.queue_message is not None:
                 # 生成完了，恢复用户信息，恢复 send 流程
                 self.reading_num -= 1
-                self.storage.current.append_message(self.storage.current.break_message)  # 将要发送的消息追加到最后
+                self.storage.current.append_message(
+                    self.storage.current.break_message or
+                    self.storage.current.queue_message
+                )  # 将要发送的消息追加到最后
                 self.storage.current.pointer.status = EnginePointer.IDLE
                 self.storage.save()  # 保存到磁盘
 

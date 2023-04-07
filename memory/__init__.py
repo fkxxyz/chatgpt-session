@@ -83,6 +83,7 @@ class CurrentConversation:
     pointer: EnginePointer
     tokens: int
     break_message: Message | None = None
+    queue_message: Message | None = None
 
     @staticmethod
     def create(guide, memo: str = "", recent_history: str = ""):
@@ -103,6 +104,10 @@ class CurrentConversation:
         for message in new_d["messages"]:
             messages.append(Message(**message))
         new_d["messages"] = messages
+        if "break_message" in d and d["break_message"] is not None:
+            new_d["break_message"] = Message(**d["break_message"])
+        if "queue_message" in d and d["queue_message"] is not None:
+            new_d["queue_message"] = Message(**d["queue_message"])
         return CurrentConversation(**new_d)
 
     def append_message(self, message: Message):

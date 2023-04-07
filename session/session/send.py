@@ -30,13 +30,15 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
                 break
             self.worker_cond.wait()
         status = self.status
-        pointer = copy.deepcopy(self.storage.current.pointer)
+        current = copy.deepcopy(self.storage.current)
         messages: List[Message] = []
         is_new_created = len(self.storage.current.memo) == 0
         if len(self.storage.current.messages) != 0:
             messages.append(copy.deepcopy(self.storage.current.messages[-1]))
 
-    if pointer.status > EnginePointer.IDLE:
+    if current.queue_message or current.break_message:
+        return SessionMessageResponse("", "", False)
+    if current.pointer.status > EnginePointer.IDLE:
         # 压缩中，直接返回最后 AI 回复的消息
         assert len(messages) != 0
         if messages[-1].sender == Message.AI:
@@ -44,15 +46,15 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
         else:
             return SessionMessageResponse("", "", False)
 
-    if pointer.engine == RevChatGPTWeb.__name__:
+    if current.pointer.engine == RevChatGPTWeb.__name__:
         if status == SessionInternal.INITIALIZING:
             if is_new_created:
-                if len(pointer.new_mid) == 0:
+                if len(current.pointer.new_mid) == 0:
                     # 刚创建的会话
                     return SessionMessageResponse("", "", False)
                 else:
                     # 刚创建的会话，且正在生成中
-                    new_message = self.scheduler.get(pointer)
+                    new_message = self.scheduler.get(current.pointer)
                     return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
             else:
                 # 继承中，直接返回最后 AI 回复的消息
@@ -63,21 +65,21 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
             assert messages[-1].sender == Message.AI
             return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
         if status == SessionInternal.GENERATING:
-            if len(pointer.new_mid) == 0:
+            if len(current.pointer.new_mid) == 0:
                 # 正在生成中，但是还没有生成出来
                 return SessionMessageResponse("", "", False)
             else:
                 try:
-                    new_message = self.scheduler.get(pointer)
+                    new_message = self.scheduler.get(current.pointer)
                 except Exception as err:
                     print(err)
                     print(self.params)
-                    print(pointer)
+                    print(current.pointer)
                     return SessionMessageResponse("", "", False)
                 return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
         assert False  # 未知状态
 
-    if pointer.status != EnginePointer.IDLE:
+    if current.pointer.status != EnginePointer.IDLE:
         if len(messages) == 0:
             return SessionMessageResponse("", "", False)
         assert messages[-1].sender == Message.AI
@@ -96,16 +98,22 @@ def append_msg(self: SessionInternal, msg: str, remark: dict):
     if t_len > 1576:
         raise error.TooLarge("message too long: " + str(t_len) + " > 1576")
     with self.worker_lock:
-        while self.status != SessionInternal.IDLE:  # 确保空闲状态
-            self.worker_cond.wait()
-        while not self.writeable():
+        while True:
+            if self.storage.current.queue_message or self.storage.current.break_message:
+                raise error.NotAcceptable('session is busy')
+            if len(self.storage.current.messages) != 0 and \
+                    self.storage.current.messages[-1].sender == Message.USER:
+                raise error.NotAcceptable('session is busy')
+            if self.status != SessionInternal.IDLE:
+                self.storage.current.queue_message = Message("", Message.USER, msg, token_len(msg), remark)
+                return
+            if self.writeable():
+                break
             self.worker_cond.wait()
 
         assert self.command == SessionInternal.NONE  # 确保命令为空
         assert self.storage.current is not None
         assert self.storage.current.pointer.status == EnginePointer.IDLE
-        assert len(self.storage.current.messages) == 0 or \
-               self.storage.current.messages[-1].sender == Message.AI  # 确保最后一条消息是AI的消息
 
         message = Message("", Message.USER, msg, token_len(msg), remark)
         message.content = self.texts[self.type].rule.compile_message(message)
@@ -143,6 +151,7 @@ def on_send(self: SessionInternal):
         while not self.readable():
             self.worker_cond.wait()
         self.reading_num += 1
+        self.storage.current.queue_message = None
         self.storage.current.break_message = None
 
     while True:
