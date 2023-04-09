@@ -1,0 +1,13 @@
+{
+  "user_id": "用户QQ号",
+  "user_nickname": "用户昵称",
+  "user_age": "用户年龄",
+  "user_sex": "用户性别",
+  "ai_id": "AI的QQ号",
+  "ai_nickname": "AI昵称",
+  "ai_age": "AI年龄",
+  "ai_sex": "AI性别",
+  "add_source": "加好友时的来源",
+  "add_comment": "加好友时的附加消息",
+  "level": 1
+}

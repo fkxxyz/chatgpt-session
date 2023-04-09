@@ -95,7 +95,7 @@ def on_summarize(self: SessionInternal):
                 self.worker_cond.wait()
             self.storage.current.pointer.engine = engine
             self.storage.current.pointer.account = account
-            self.storage.current.pointer.prompt = self.texts[self.type].summary()
+            self.storage.current.pointer.prompt = self.texts[self.type].summary(self.params)
             self.storage.save()
 
         # 发送信息，得到新信息的 mid

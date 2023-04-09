@@ -54,8 +54,13 @@ class SessionText:
             guide = guide.replace("${" + key + "}", params[key])
         return guide
 
-    def summary(self) -> str:
-        return self.t_summary
+    def summary(self, params: dict) -> str:
+        summary = self.t_summary
+        for key in params:
+            if type(params[key]) != str:
+                continue
+            summary = summary.replace("${" + key + "}", params[key])
+        return summary
 
     def merge(self, params: dict, memo: str, summary: str) -> str:
         prompt = self.t_merge
