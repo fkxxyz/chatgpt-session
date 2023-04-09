@@ -117,7 +117,7 @@ def rev_chatgpt_web_send(
             call_until_success(lambda: api.counter(account, 60))
             raise error.ServerIsBusy(resp.content)
         elif resp.status_code == http.HTTPStatus.NOT_ACCEPTABLE:
-            if token_len(msg) > 1576:
+            if token_len(msg) > 1536:
                 raise error.TooLarge(resp.content)
             # Something went wrong
             # 需要重新加载会话
@@ -203,8 +203,8 @@ class Scheduler:
     # 发送一次性的消息
     def send_away(self, msg: str, level: int) -> str:
         t_len = token_len(msg)
-        if t_len > 1576:
-            raise error.TooLarge("message too long: " + str(t_len) + " > 1576")
+        if t_len > 1536:
+            raise error.TooLarge("message too long: " + str(t_len) + " > 1536")
         while True:
             pointer = EnginePointer(level=level)
             engine_, account = self.evaluate(pointer)
