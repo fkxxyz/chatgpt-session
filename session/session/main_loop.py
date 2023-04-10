@@ -1,5 +1,6 @@
 import threading
 import time
+import traceback
 from typing import Callable
 
 from memory import EnginePointer, Message
@@ -103,6 +104,9 @@ def worker_fn(self: SessionInternal, fn: Callable):
             fn()
             return
         except Exception as e:
+            # 打印堆栈信息
+            traceback.print_exc()
+
             self.logger.error("worker thread failed: %s", str(e))
 
             if i == 2:
