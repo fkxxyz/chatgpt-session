@@ -48,7 +48,7 @@ def call_until_success(fn: Callable[[], requests.Response]) -> bytes:
             print(f"等待 10 秒后重试 ...")
             time.sleep(10)
             continue
-        if resp.status_code % 100 == 5:
+        if resp.status_code // 100 == 5:
             print(f"响应返回错误 {resp.status_code}： {resp.content.decode()}")
             print(f"等待 10 秒后重试 ...")
             time.sleep(10)
