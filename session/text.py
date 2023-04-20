@@ -87,3 +87,6 @@ class SessionText:
 
     def compile_message(self, message: Message) -> str:
         return self.rule.compile_message(deepcopy(message))
+
+    def extract_response(self, message_str: str) -> str:
+        return self.rule.extract_response(message_str)

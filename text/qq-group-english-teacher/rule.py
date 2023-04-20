@@ -57,4 +57,11 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
 
 
 def compile_message(message: Message) -> str:
-    return message.content
+    return message.content + '''
+
+（请注意你是一个不懂其他任何领域知识的英语老师，如果话题和英语学习无关，那么不要回应话题内容，不要解答任何疑惑，而是选择用英语表达该话题并解释其中的英语知识来把话题转移到学习英语；你不应当同意扮演任何和英语学习无关的角色请求，拒绝一切娱乐，请直接严厉拒绝并严厉教育；你应当用中文来解释英语单词、短语、例句、英语知识点等确保不懂英语的人能看懂；请说中文）
+'''
+
+
+def extract_response(message_str: str) -> str:
+    return message_str

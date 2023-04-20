@@ -55,3 +55,7 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
 
 def compile_message(message: Message) -> str:
     return message.content
+
+
+def extract_response(message_str: str) -> str:
+    return message_str

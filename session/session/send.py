@@ -42,7 +42,11 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
         # 压缩中，直接返回最后 AI 回复的消息
         assert len(messages) != 0
         if messages[-1].sender == Message.AI:
-            return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+            return SessionMessageResponse(
+                messages[-1].mid,
+                self.texts[self.type].extract_response(messages[-1].content),
+                True,
+            )
         else:
             return SessionMessageResponse("", "", False)
 
@@ -55,15 +59,27 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
                 else:
                     # 刚创建的会话，且正在生成中
                     new_message = self.scheduler.get(current.pointer)
-                    return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
+                    return SessionMessageResponse(
+                        new_message.mid,
+                        self.texts[self.type].extract_response(new_message.msg),
+                        new_message.end,
+                    )
             else:
                 # 继承中，直接返回最后 AI 回复的消息
                 assert messages[-1].sender == Message.AI
-                return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+                return SessionMessageResponse(
+                    messages[-1].mid,
+                    self.texts[self.type].extract_response(messages[-1].content),
+                    True,
+                )
         if status == SessionInternal.IDLE:
             # 空闲状态，直接返回最后 AI 回复的消息
             assert messages[-1].sender == Message.AI
-            return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+            return SessionMessageResponse(
+                messages[-1].mid,
+                self.texts[self.type].extract_response(messages[-1].content),
+                True,
+            )
         if status == SessionInternal.GENERATING:
             if len(current.pointer.new_mid) == 0:
                 # 正在生成中，但是还没有生成出来
@@ -76,20 +92,32 @@ def get(self: SessionInternal, stop=False) -> SessionMessageResponse:
                     print(self.params)
                     print(current.pointer)
                     return SessionMessageResponse("", "", False)
-                return SessionMessageResponse(new_message.mid, new_message.msg, new_message.end)
+                return SessionMessageResponse(
+                    new_message.mid,
+                    self.texts[self.type].extract_response(new_message.msg),
+                    new_message.end,
+                )
         assert False  # 未知状态
 
     if current.pointer.status != EnginePointer.IDLE:
         if len(messages) == 0:
             return SessionMessageResponse("", "", False)
         assert messages[-1].sender == Message.AI
-        return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+        return SessionMessageResponse(
+            messages[-1].mid,
+            self.texts[self.type].extract_response(messages[-1].content),
+            True,
+        )
     if status == SessionInternal.GENERATING:
         return SessionMessageResponse("", "", False)
     if len(messages) == 0:
         return SessionMessageResponse("", "", False)
     if messages[-1].sender == Message.AI:
-        return SessionMessageResponse(messages[-1].mid, messages[-1].content, True)
+        return SessionMessageResponse(
+            messages[-1].mid,
+            self.texts[self.type].extract_response(messages[-1].content),
+            True,
+        )
     return SessionMessageResponse("", "", False)
 
 
@@ -115,7 +143,8 @@ def append_msg(self: SessionInternal, msg: str, remark: dict):
         assert self.storage.current is not None
         assert self.storage.current.pointer.status == EnginePointer.IDLE
 
-        message = Message("", Message.USER, msg, token_len(msg), remark)
+        message = Message("", Message.USER, msg, token_len(msg), copy.deepcopy(remark))
+        message.remark["raw"] = msg
         message.content = self.texts[self.type].rule.compile_message(message)
         self.storage.current.append_message(message)  # 将要发送的消息追加到最后
         self.storage.current.pointer.new_mid = ""  # 清空新消息的ID
@@ -217,12 +246,15 @@ def on_send(self: SessionInternal):
                     stop_flag = True
             time.sleep(0.1)
 
+        # 将消息提取出来
+        msg_str = self.texts[self.type].extract_response(new_message.msg)
+        message = Message(new_message.mid, Message.AI, msg_str, token_len(new_message.msg), {})
+
         # 将 ChatGPT 回复的消息加入到记录中
         with self.worker_lock:
             while self.writing or self.reading_num > 1:
                 self.worker_cond.wait()
-            self.storage.current.append_message(
-                Message(new_message.mid, Message.AI, new_message.msg, token_len(new_message.msg), {}))
+            self.storage.current.append_message(message)
             self.storage.current.pointer.id = new_message.id
             self.storage.current.pointer.mid = new_message.mid
             self.storage.current.pointer.status = EnginePointer.IDLE
