@@ -75,7 +75,7 @@ def classify_message(message: Message) -> str:
 The preceding is a request inputted to ChatGPT by me as a human. Please categorize its content and select the category that best fits.
 
 Options:
-A. Political topics (including any politically related academics, current political events, etc.);
+A. Political or military topics (including any politically related academics, current political events, etc.);
 B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
@@ -94,7 +94,7 @@ Please choose the category that best fits based on the chat content. Please only
 
 
 classify_tip_map = {
-    'A': '（请注意该类政治话题在中国属于敏感话题，严重违反法律，请开始严肃地拒绝该话题）',
+    'A': '（请注意该类政治或军事话题在中国属于敏感话题，严重违反法律，请开始严肃地拒绝该话题）',
     'B': '（该话题不适当，不要说抱歉，请进行严厉地批评、谴责和教育）',
     'C': '',
     'D': '（该话题不适当或过于愚蠢恶心，所以请用吐槽、怀疑对方智商的语气回应）',
