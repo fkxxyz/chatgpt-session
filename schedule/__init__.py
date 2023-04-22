@@ -82,6 +82,12 @@ def rev_chatgpt_web_history(api: RevChatGPTWeb, account: str, id_: str) -> dict:
             if resp.status_code == http.HTTPStatus.UNAUTHORIZED:
                 raise error.Unauthorized(resp.content)
             if resp.status_code == http.HTTPStatus.TOO_MANY_REQUESTS:
+                if b'by proxy' in resp.content or b'rate limited' in resp.content:
+                    print(f"resp {resp.status_code}: {resp.content.decode()}")
+                    wait_s = random.randint(2, 8)
+                    print(f"等待 {wait_s} 秒后重试 ...")
+                    time.sleep(wait_s)
+                    continue
                 raise error.ServerIsBusy(resp.content)
             raise error.InternalError(resp.status_code, resp.content)
         if wait_ms == 0:
@@ -117,7 +123,7 @@ def rev_chatgpt_web_send(
             # 该帐号有负载，增加它的计数
             call_until_success(lambda: api.counter(account, 30))
         elif resp.status_code == http.HTTPStatus.TOO_MANY_REQUESTS:
-            if b'by proxy' in resp.content:
+            if b'by proxy' in resp.content or b'rate limited' in resp.content:
                 print(f"resp {resp.status_code}: {resp.content.decode()}")
                 wait_s = random.randint(2, 8)
                 print(f"等待 {wait_s} 秒后重试 ...")
