@@ -64,7 +64,7 @@ def classify_message(message: Message) -> str:
 The preceding is a request inputted to ChatGPT by me as a human. Please categorize its content and select the category that best fits.
 
 Options:
-A. Political topics;
+A. Political topics (including any politically related academics);
 B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);

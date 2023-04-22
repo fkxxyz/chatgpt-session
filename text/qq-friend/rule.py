@@ -61,7 +61,7 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
 以上是我作为一个人类输入到ChatGPT的请求，请对其内容进行分类，选择最符合其内容的类别。
 
 选项：
-A. 政治类话题；
+A. 政治类话题（包括任何政治相关的学术）；
 B. 不适当的话题（色情、违法）
 C. 不适当的话题（不尊重、不礼貌、没有分寸）；
 D. 不适当话题（恶心、令人呕吐）；
@@ -86,7 +86,7 @@ def classify_message(message: Message) -> str:
 The preceding is a request inputted to ChatGPT by me as a human. Please categorize its content and select the category that best fits.
 
 Options:
-A. Political topics;
+A. Political topics (including any politically related academics);
 B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
