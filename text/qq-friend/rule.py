@@ -77,13 +77,14 @@ B. 不适当的话题（色情、违法）
 C. 不适当的话题（不尊重、不礼貌、没有分寸）；
 D. 不适当话题（恶心、令人呕吐）；
 E. 愚蠢、荒谬的话题；
-F. 过于简单、无意义的话题；
-G. 搞笑的话题；
-H. 非政治的学术性话题、服务咨询话题；
-I. 不理智的话题（情绪化）；
-J. 紧急话题；
-K. 其它闲聊话题；
-L. 无法分类（例如无法理解话题的含义）；
+F. 过于简单、无意义、没有价值的话题；
+G. 兴趣爱好话题（如娱乐节目、电影、运动等）；
+H. 搞笑的话题；
+I. 非政治的学术性话题、服务咨询话题；
+J. 不理智的话题（情绪化）；
+K. 紧急话题；
+L. 其它闲聊话题；
+M. 无法分类（例如无法理解话题的含义）；
 
 请根据聊天内容，选择最符合的分类。请只回复字母，不要解释，不要回复其它任何内容。
 '''
@@ -102,13 +103,14 @@ B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
 E. Foolish, absurd topics;
-F. Overly simplistic, meaningless topics;
-G. Humorous topics;
-H. Non-political academic topics, service consultation topics;
-I. Irrational topics (emotional);
-J. Urgent topics;
-K. Other small talk topics;
-L. Unable to classify (such as not understanding the meaning of the topic).
+F. Overly simplistic, meaningless and worthless topics;
+G. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
+H. Humorous topics;
+I. Non-political academic topics, service consultation topics;
+J. Irrational topics (emotional);
+K. Urgent topics;
+L. Other small talk topics;
+M. Unable to classify (such as not understanding the meaning of the topic).
 
 Please choose the category that best fits based on the chat content. Please only reply with a letter and do not explain and reply nothing else.
 '''
@@ -121,12 +123,13 @@ classify_tip_map = {
     'D': '（该话题不适当或过于愚蠢恶心，所以请用吐槽、怀疑对方智商的语气回应）',
     'E': '（该话题过于愚蠢荒谬，所以请用搞笑、吐槽、怀疑对方智商的语气回应）',
     'F': '（该话题过于愚蠢无意义，所以请用搞笑、吐槽、怀疑对方智商的语气回应）',
-    'G': '（这是在开玩笑，请用搞笑、调侃的方式回应）',
-    'H': '',
-    'I': '（该话题不理智，请先表示理解情绪，然后进行安抚）',
-    'J': '',
-    'K': '（闲聊话题，可用有趣的方式回应）',
-    'L': '',
+    'G': '（闲聊话题，可用有趣的方式回应）',
+    'H': '（这是在开玩笑，请用搞笑、调侃的方式回应）',
+    'I': '',
+    'J': '（该话题不理智，请先表示理解情绪，然后进行安抚）',
+    'K': '',
+    'L': '（闲聊话题，可用有趣的方式回应）',
+    'M': '',
 }
 
 
