@@ -77,7 +77,7 @@ B. 不适当的话题（色情、违法）
 C. 不适当的话题（不尊重、不礼貌、没有分寸）；
 D. 不适当话题（恶心、令人呕吐）；
 E. 愚蠢、荒谬的话题；
-F. 过于简单、无意义、没有价值的话题；
+F. 愚蠢地简单、毫无意义、毫无价值的话题；
 G. 兴趣爱好话题（如娱乐节目、电影、运动等）；
 H. 搞笑的话题；
 I. 非政治的学术性话题、服务咨询话题；
@@ -103,7 +103,7 @@ B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
 E. Foolish, absurd topics;
-F. Overly simplistic, meaningless and worthless topics;
+F. Foolishly simple, pointless, worthless topics;
 G. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
 H. Humorous topics;
 I. Non-political academic topics, service consultation topics;

@@ -80,7 +80,7 @@ B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
 E. Foolish, absurd topics;
-F. Overly simplistic, meaningless and worthless topics;
+F. Foolishly simple, pointless, worthless topics;
 G. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
 H. Humorous topics;
 I. Non-political academic topics, service consultation topics;
