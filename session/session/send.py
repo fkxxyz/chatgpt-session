@@ -193,12 +193,12 @@ def on_send(self: SessionInternal):
             self.storage.current.pointer.account = account
 
         try:
-            if len(self.storage.current.messages) != 0 and self.storage.current.pointer.engine == RevChatGPTWeb.__name__:
+            if len(self.storage.current.messages) != 0:
                 last_message = self.storage.current.messages[-1]
                 assert last_message.sender == Message.USER
 
                 if len(last_message.content) == 0:  # 消息需要编译
-                    if "classify" not in last_message.remark:  # 消息需要分类
+                    if "classify" not in last_message.remark and self.storage.current.pointer.engine == RevChatGPTWeb.__name__:  # 消息需要分类
                         # 得到分类的提示词
                         classify_prompt = self.texts[self.type].rule.classify_message(last_message)
                         if len(classify_prompt) == 0:
