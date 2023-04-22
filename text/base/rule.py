@@ -53,8 +53,12 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
     return history, messages
 
 
+def classify_message(message: Message) -> str:
+    return ""
+
+
 def compile_message(message: Message) -> str:
-    return message.content
+    return message.remark["raw"]
 
 
 def extract_response(message_str: str) -> str:

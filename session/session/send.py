@@ -143,9 +143,8 @@ def append_msg(self: SessionInternal, msg: str, remark: dict):
         assert self.storage.current is not None
         assert self.storage.current.pointer.status == EnginePointer.IDLE
 
-        message = Message("", Message.USER, msg, token_len(msg), copy.deepcopy(remark))
+        message = Message("", Message.USER, "", token_len(msg), copy.deepcopy(remark))
         message.remark["raw"] = msg
-        message.content = self.texts[self.type].rule.compile_message(message)
         self.storage.current.append_message(message)  # 将要发送的消息追加到最后
         self.storage.current.pointer.new_mid = ""  # 清空新消息的ID
         self.storage.save()  # 保存到磁盘
@@ -193,8 +192,58 @@ def on_send(self: SessionInternal):
             self.storage.current.pointer.engine = engine
             self.storage.current.pointer.account = account
 
-        # 发送信息，得到新信息的 mid
         try:
+            if len(self.storage.current.messages) != 0:
+                last_message = self.storage.current.messages[-1]
+                assert last_message.sender == Message.USER
+
+                if len(last_message.content) == 0:  # 消息需要编译
+                    if "classify" not in last_message.remark:  # 消息需要分类
+                        # 得到分类的提示词
+                        classify_prompt = self.texts[self.type].rule.classify_message(last_message)
+                        if len(classify_prompt) == 0:
+                            with self.worker_lock:
+                                while self.writing or self.reading_num > 1:
+                                    self.worker_cond.wait()
+                                last_message.remark["classify"] = ""
+                                self.storage.save()
+                        else:
+                            with self.worker_lock:
+                                while self.writing or self.reading_num > 1:
+                                    self.worker_cond.wait()
+                                last_message.remark["classify_prompt"] = classify_prompt
+                                self.storage.save()
+
+                            # 开始分类
+                            classify_mid = self.scheduler.send(self.storage.current)
+
+                            # 循环等到 ChatGPT 回复完成
+                            stop_flag = False
+                            while True:
+                                new_message = self.scheduler.get_rev_chatgpt_web(classify_mid, stop_flag)
+                                if new_message.end:
+                                    break
+                                with self.worker_lock:
+                                    if self.status == SessionInternal.STOPPING:
+                                        stop_flag = True
+                                time.sleep(0.1)
+
+                            with self.worker_lock:
+                                while self.writing or self.reading_num > 1:
+                                    self.worker_cond.wait()
+                                last_message.remark["classify"] = new_message.msg
+                                self.storage.save()
+                            self.logger.info("on_send() classify: %s", last_message.remark["classify"])
+
+                    # 编译消息，得到即将发给 AI 的消息
+                    compiled_content = self.texts[self.type].rule.compile_message(last_message, )
+                    with self.worker_lock:
+                        while self.writing or self.reading_num > 1:
+                            self.worker_cond.wait()
+                        last_message.content = compiled_content
+                        self.storage.save()
+
+            # 发送信息，得到新信息的 mid
             reply = self.scheduler.send(self.storage.current)
             break
         except (error.Unauthorized, error.ServerIsBusy) as err:

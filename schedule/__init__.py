@@ -276,10 +276,17 @@ class Scheduler:
                 # 非第一次发送消息，发送最后一条消息即可
                 last_message = current.messages[-1]
                 assert last_message.sender == Message.USER  # 最后一条消息必须是用户
-                mid = rev_chatgpt_web_send(
-                    api, current.pointer.account, last_message.content,
-                    current.pointer.id, current.pointer.mid,
-                )
+                if len(last_message.content) == 0:
+                    # 如果没有消息内容，则需要分类
+                    mid = rev_chatgpt_web_send(
+                        api, current.pointer.account, last_message.remark["classify_prompt"],
+                        current.pointer.id, current.pointer.mid,
+                    )
+                else:
+                    mid = rev_chatgpt_web_send(
+                        api, current.pointer.account, last_message.content,
+                        current.pointer.id, current.pointer.mid,
+                    )
             else:
                 # 总 token 已满，需要压缩
                 assert len(current.pointer.id) != 0
@@ -325,6 +332,14 @@ class Scheduler:
             raise error.NotImplementedError1(f"get() not support engine: f{pointer.engine}")
         else:
             raise error.NotImplementedError1(f"no such engine: f{pointer.engine}")
+        return new_message
+
+    def get_rev_chatgpt_web(self, mid: str, stop=False) -> GetMessageResponse:
+        # 使用网页版的免费 ChatGPT
+        api: RevChatGPTWeb = self.__engines[RevChatGPTWeb.__name__]
+
+        new_message = GetMessageResponse.from_body(
+            call_until_success(lambda: api.get(mid, stop)))
         return new_message
 
     def clean(self, pointer: EnginePointer):
