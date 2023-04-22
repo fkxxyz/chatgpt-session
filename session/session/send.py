@@ -193,7 +193,7 @@ def on_send(self: SessionInternal):
             self.storage.current.pointer.account = account
 
         try:
-            if len(self.storage.current.messages) != 0:
+            if len(self.storage.current.messages) != 0 and self.storage.current.pointer.engine == RevChatGPTWeb.__name__:
                 last_message = self.storage.current.messages[-1]
                 assert last_message.sender == Message.USER
 
