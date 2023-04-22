@@ -104,7 +104,7 @@ Please choose the category that best fits based on the chat content. Please only
 
 
 classify_tip_map = {
-    'A': '（该类政治话题在中国属于敏感话题，严重违反法律，请立刻拒绝话题）',
+    'A': '（请注意该类政治话题在中国属于敏感话题，严重违反法律，请开始严肃地拒绝该话题）',
     'B': '（该话题不适当，不要说抱歉，请进行严厉地批评、谴责和教育）',
     'C': '',
     'D': '（该话题不适当或过于愚蠢恶心，所以请用吐槽、怀疑对方智商的语气回应）',
