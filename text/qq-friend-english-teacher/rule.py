@@ -6,6 +6,12 @@ from memory import Message
 from tokenizer import token_len
 
 
+def get_raw_message(message: Message) -> str:
+    if "raw" in message.remark:
+        return message.remark["raw"]
+    return message.content
+
+
 # 精简消息，如果消息的 token 大于 384，则把第100个字符到倒数100个字符之间的内容替换为省略号
 def prune_message(message: Message) -> str:
     if token_len(message.content) <= 384:
@@ -22,9 +28,14 @@ sender_map = {
 def compile_history(messages: List[Message], params: dict) -> (str, List[Message]):
     if len(messages) < 2:  # 确保至少有两条消息
         return "<empty>", []
-    i = len(messages) - 2
 
     origin_messages = copy.deepcopy(messages)
+
+    for i in range(len(messages)):
+        messages[i].content = get_raw_message(messages[i])
+        messages[i].tokens = token_len(messages[i].content)
+
+    i = len(messages) - 2
 
     # 最后两条消息，如果 token 数超过 512，则精简消息，优先精简用户的消息
     token = messages[i].tokens + messages[i + 1].tokens + 2
