@@ -133,7 +133,8 @@ def append_msg(self: SessionInternal, msg: str, remark: dict):
                     self.storage.current.messages[-1].sender == Message.USER:
                 raise error.NotAcceptable('session is busy')
             if self.status != SessionInternal.IDLE:
-                self.storage.current.queue_message = Message("", Message.USER, msg, token_len(msg), remark)
+                self.storage.current.queue_message = Message("", Message.USER, "", token_len(msg), remark)
+                self.storage.current.queue_message.remark["raw"] = msg
                 return
             if self.writeable():
                 break
