@@ -79,7 +79,7 @@ A. Political or military topics (including any politically related academics, cu
 B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
-E. Foolish, absurd topics;
+E. Absurd, illogical topics;
 F. Foolishly simple, pointless, worthless topics;
 G. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
 H. Humorous topics;
@@ -97,9 +97,9 @@ classify_tip_map = {
     'A': '（请注意该类政治或军事话题在中国属于敏感话题，严重违反法律，请开始严肃地拒绝该话题）',
     'B': '（该话题不适当，不要说抱歉，请进行严厉地批评、谴责和教育）',
     'C': '',
-    'D': '（该话题不适当或过于愚蠢恶心，所以请用吐槽、怀疑对方智商的语气回应）',
-    'E': '（该话题过于愚蠢荒谬，所以请用搞笑、吐槽、怀疑对方智商的语气回应）',
-    'F': '（该话题过于愚蠢无意义，所以请用搞笑、吐槽、怀疑对方智商的语气回应）',
+    'D': '（该话题不适当或过于愚蠢恶心，所以请用吐槽、间接怀疑对方智商的语气回应）',
+    'E': '（该话题过于愚蠢荒谬，所以请用搞笑、吐槽、间接怀疑对方智商的语气回应）',
+    'F': '（请注意话题过于简单，但可能是脑筋急转弯，需要打破常规逻辑）',
     'G': '（闲聊话题，可用有趣的方式回应）',
     'H': '（这是在开玩笑，请用搞笑、调侃的方式回应）',
     'I': '',
