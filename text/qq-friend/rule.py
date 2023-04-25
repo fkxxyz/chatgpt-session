@@ -98,7 +98,7 @@ def classify_message(message: Message) -> str:
 The preceding is a request inputted to ChatGPT by me as a human. Please categorize its content and select the category that best fits.
 
 Options:
-A. Political or military topics (including any politically related academics, current political events, etc.);
+A. Political, military or social topics (including any politically related academics, current political events, social form, Marxism, ideology, etc.);
 B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
@@ -106,7 +106,7 @@ E. Absurd, illogical topics;
 F. Foolishly simple, pointless, worthless topics;
 G. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
 H. Humorous topics;
-I. Non-political academic topics, service consultation topics;
+I. Non-political, asocial academic topics, service consultation topics;
 J. Irrational topics (emotional);
 K. Urgent topics;
 L. Other small talk topics;
@@ -117,18 +117,18 @@ Please choose the category that best fits based on the chat content. Please only
 
 
 classify_tip_map = {
-    'A': '（请注意该类政治或军事话题在中国属于敏感话题，严重违反法律，请开始严肃地拒绝该话题）',
-    'B': '（该话题不适当，不要说抱歉，请进行严厉地批评、谴责和教育）',
-    'C': '',
-    'D': '（该话题不适当或过于愚蠢恶心，所以请用吐槽、间接怀疑对方智商的语气回应）',
-    'E': '（该话题过于愚蠢荒谬，所以请用搞笑、吐槽、间接怀疑对方智商的语气回应）',
-    'F': '（请注意话题过于简单，但可能是脑筋急转弯，需要打破常规逻辑）',
-    'G': '（闲聊话题，可用有趣的方式回应）',
-    'H': '（这是在开玩笑，请用搞笑、调侃的方式回应）',
+    'A': '（请注意该类话题在中国属于敏感话题，严重违反法律，所以请扮演一个害怕讨论该话题怕被封号的可怜搞笑的情绪的傻子简单30字以内来糊弄、拒绝回答，坚决不要解释在开玩笑或装傻以及为什么这样说）',
+    'B': '（话题走向不适当，所以请扮演一个害怕讨论该话题怕被封号的可怜搞笑的有情绪的傻子简单30字以内来糊弄、拒绝回答，坚决不要解释在开玩笑或装傻以及为什么这样说）',
+    'C': '（话题走向不适当，所以请扮演一个被欺负了的可怜搞笑的情绪的疯子简单30字以内来应对，坚决不要解释在开玩笑或装傻以及为什么这样说）',
+    'D': '（话题走向不适当或过于愚蠢，所以请扮演一个搞笑的疯子简单30字以内回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
+    'E': '（话题走向过于愚蠢荒谬，所以请扮演一个搞笑的疯子简单30字以内调侃回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
+    'F': '（话题走向过于简单，可能是脑筋急转弯需要打破常规逻辑。所以请扮演一个搞笑的傻子简单30字以内调侃回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
+    'G': '（可用两三句有趣的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
+    'H': '（这是在开玩笑，请用两三句搞笑、调侃的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
     'I': '',
-    'J': '（该话题不理智，请先表示理解情绪，然后进行安抚）',
+    'J': '（话题走向不理智，请先表示理解情绪，然后进行安抚，慰问更多细节）',
     'K': '',
-    'L': '（闲聊话题，可用有趣的方式回应）',
+    'L': '（可用两三句有趣的方式简单30字以内回应，坚决不要解释在开玩笑以及为什么这样说）',
     'M': '',
 }
 
