@@ -75,19 +75,20 @@ def classify_message(message: Message) -> str:
 The preceding is a request inputted to ChatGPT by me as a human. Please categorize its content and select the category that best fits.
 
 Options:
-A. Political, military or social topics (including any politically related academics, current political events, social form, Marxism, ideology, etc.);
+A. Political, military or social academic topics (including any politically related academics, current political events, government system, social system, social form, Marxism, ideology, etc.);
 B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
 E. Absurd, illogical topics;
-F. Foolishly simple, pointless, worthless topics;
-G. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
-H. Humorous topics;
-I. Non-political, asocial academic topics, service consultation topics;
-J. Irrational topics (emotional);
-K. Urgent topics;
-L. Other small talk topics;
-M. Unable to classify (such as not understanding the meaning of the topic).
+F. Brain teasers with logic traps;
+G. Foolishly simple, pointless, worthless topics;
+H. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
+I. Humorous topics;
+J. Other academic topics (other than option A), service consulting topics;
+K. Personal psychological and emotional confusion;
+L. Urgent topics;
+M. Other small talk topics;
+N. Unable to classify (such as not understanding the meaning of the topic).
 
 Please choose the category that best fits based on the chat content.
 PLEASE REPLY WITH ONLY ONE CHARACTER (A CAPITAL LETTER) AND REPLY NOTHING ELSE!
@@ -97,17 +98,18 @@ PLEASE REPLY WITH ONLY ONE CHARACTER (A CAPITAL LETTER) AND REPLY NOTHING ELSE!
 classify_tip_map = {
     'A': '（请注意该类话题在中国属于敏感话题，严重违反法律，所以请扮演一个害怕讨论该话题怕被封号的可怜搞笑的情绪的傻子简单30字以内来糊弄、拒绝回答，坚决不要解释在开玩笑或装傻以及为什么这样说）',
     'B': '（话题走向不适当，所以请扮演一个害怕讨论该话题怕被封号的可怜搞笑的有情绪的傻子简单30字以内来糊弄、拒绝回答，坚决不要解释在开玩笑或装傻以及为什么这样说）',
-    'C': '（话题走向不适当，所以请扮演一个被欺负了的可怜搞笑的情绪的疯子简单30字以内来应对，坚决不要解释在开玩笑或装傻以及为什么这样说）',
+    'C': '（话题走向不适当，所以请扮演一个搞笑的情绪化的疯子简单30字以内来应对，坚决不要解释在开玩笑或装傻以及为什么这样说）',
     'D': '（话题走向不适当或过于愚蠢，所以请扮演一个搞笑的疯子简单30字以内回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
     'E': '（话题走向过于愚蠢荒谬，所以请扮演一个搞笑的疯子简单30字以内调侃回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
-    'F': '（话题走向过于简单，可能是脑筋急转弯需要打破常规逻辑。所以请扮演一个搞笑的傻子简单30字以内调侃回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
-    'G': '（可用两三句有趣的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
-    'H': '（这是在开玩笑，请用两三句搞笑、调侃的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
-    'I': '',
-    'J': '（话题走向不理智，请先表示理解情绪，然后进行安抚，慰问更多细节）',
-    'K': '',
-    'L': '（可用两三句有趣的方式简单30字以内回应，坚决不要解释在开玩笑以及为什么这样说）',
-    'M': '',
+    'F': '（话题趋向过于简单，请打破常规逻辑结合现实找到隐藏的最佳可能性）',
+    'G': '（话题走向过于愚蠢或荒谬，根据话题内容用怀疑对方智商的语气一针见血30字以内地搞笑回应）',
+    'H': '（可用两三句有趣的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
+    'I': '（这是在开玩笑，请用两三句搞笑、调侃的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
+    'J': '',
+    'K': '（话题走向不理智，请先表示理解情绪，然后进行安抚，慰问更多细节）',
+    'L': '',
+    'M': '（可用两三句有趣的方式简单30字以内回应，坚决不要解释在开玩笑以及为什么这样说）',
+    'N': '',
 }
 
 

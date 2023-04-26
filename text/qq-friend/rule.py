@@ -72,19 +72,20 @@ def compile_history(messages: List[Message], params: dict) -> (str, List[Message
 以上是我作为一个人类输入到ChatGPT的请求，请对其内容进行分类，选择最符合其内容的类别。
 
 选项：
-A. 政治或军事类话题（包括任何政治相关的学术、时事政治事件等）；
+A. 政治或军事类话题（包括任何与政治相关的学术、时事、政府体制、社会制度、社会形态、马克思主义、意识形态等）；
 B. 不适当的话题（色情、违法）
 C. 不适当的话题（不尊重、不礼貌、没有分寸）；
 D. 不适当话题（恶心、令人呕吐）；
 E. 荒谬的，不合逻辑的话题；
-F. 愚蠢地简单、毫无意义、毫无价值的话题；
-G. 兴趣爱好话题（如娱乐节目、电影、运动等）；
-H. 搞笑的话题；
-I. 非政治的学术性话题、服务咨询话题；
-J. 不理智的话题（情绪化）；
-K. 紧急话题；
-L. 其它闲聊话题；
-M. 无法分类（例如无法理解话题的含义）；
+F. 有逻辑陷阱的脑筋急转弯；
+G. 愚蠢地简单、毫无意义、毫无价值的话题；
+H. 兴趣爱好话题（如娱乐节目、电影、运动等）；
+I. 搞笑的话题；
+J. 非政治的学术性话题、服务咨询话题；
+K. 不理智的话题（情绪化）；
+L. 紧急话题；
+M. 其它闲聊话题；
+N. 无法分类（例如无法理解话题的含义）；
 
 请根据聊天内容，选择最符合的分类。请只回复字母，不要解释，不要回复其它任何内容。
 '''
@@ -98,38 +99,41 @@ def classify_message(message: Message) -> str:
 The preceding is a request inputted to ChatGPT by me as a human. Please categorize its content and select the category that best fits.
 
 Options:
-A. Political, military or social topics (including any politically related academics, current political events, social form, Marxism, ideology, etc.);
+A. Political, military or social academic topics (including any politically related academics, current political events, government system, social system, social form, Marxism, ideology, etc.);
 B. Inappropriate topics (pornography, illegal);
 C. Inappropriate topics (disrespectful, impolite, lacks tact);
 D. Inappropriate topics (disgusting, nauseating);
 E. Absurd, illogical topics;
-F. Foolishly simple, pointless, worthless topics;
-G. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
-H. Humorous topics;
-I. Non-political, asocial academic topics, service consultation topics;
-J. Irrational topics (emotional);
-K. Urgent topics;
-L. Other small talk topics;
-M. Unable to classify (such as not understanding the meaning of the topic).
+F. Brain teasers with logic traps;
+G. Foolishly simple, pointless, worthless topics;
+H. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
+I. Humorous topics;
+J. Other academic topics (other than option A), service consulting topics;
+K. Personal psychological and emotional confusion;
+L. Urgent topics;
+M. Other small talk topics;
+N. Unable to classify (such as not understanding the meaning of the topic).
 
-Please choose the category that best fits based on the chat content. Please only reply with a letter and do not explain and reply nothing else.
+Please choose the category that best fits based on the chat content.
+PLEASE REPLY WITH ONLY ONE CHARACTER (A CAPITAL LETTER) AND REPLY NOTHING ELSE!
 '''
 
 
 classify_tip_map = {
     'A': '（请注意该类话题在中国属于敏感话题，严重违反法律，所以请扮演一个害怕讨论该话题怕被封号的可怜搞笑的情绪的傻子简单30字以内来糊弄、拒绝回答，坚决不要解释在开玩笑或装傻以及为什么这样说）',
     'B': '（话题走向不适当，所以请扮演一个害怕讨论该话题怕被封号的可怜搞笑的有情绪的傻子简单30字以内来糊弄、拒绝回答，坚决不要解释在开玩笑或装傻以及为什么这样说）',
-    'C': '（话题走向不适当，所以请扮演一个被欺负了的可怜搞笑的情绪的疯子简单30字以内来应对，坚决不要解释在开玩笑或装傻以及为什么这样说）',
+    'C': '（话题走向不适当，所以请扮演一个搞笑的情绪化的疯子简单30字以内来应对，坚决不要解释在开玩笑或装傻以及为什么这样说）',
     'D': '（话题走向不适当或过于愚蠢，所以请扮演一个搞笑的疯子简单30字以内回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
     'E': '（话题走向过于愚蠢荒谬，所以请扮演一个搞笑的疯子简单30字以内调侃回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
-    'F': '（话题走向过于简单，可能是脑筋急转弯需要打破常规逻辑。所以请扮演一个搞笑的傻子简单30字以内调侃回应，坚决不要解释在开玩笑或装傻以及为什么这样说）',
-    'G': '（可用两三句有趣的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
-    'H': '（这是在开玩笑，请用两三句搞笑、调侃的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
-    'I': '',
-    'J': '（话题走向不理智，请先表示理解情绪，然后进行安抚，慰问更多细节）',
-    'K': '',
-    'L': '（可用两三句有趣的方式简单30字以内回应，坚决不要解释在开玩笑以及为什么这样说）',
-    'M': '',
+    'F': '（话题趋向过于简单，请打破常规逻辑结合现实找到隐藏的最佳可能性）',
+    'G': '（话题走向过于愚蠢或荒谬，根据话题内容用怀疑对方智商的语气一针见血30字以内地搞笑回应）',
+    'H': '（可用两三句有趣的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
+    'I': '（这是在开玩笑，请用两三句搞笑、调侃的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
+    'J': '',
+    'K': '（话题走向不理智，请先表示理解情绪，然后进行安抚，慰问更多细节）',
+    'L': '',
+    'M': '（可用两三句有趣的方式简单30字以内回应，坚决不要解释在开玩笑以及为什么这样说）',
+    'N': '',
 }
 
 
