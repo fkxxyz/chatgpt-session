@@ -13,7 +13,7 @@ fi
 
 cmd_list() {
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/list")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/session/list")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -24,7 +24,7 @@ cmd_list() {
 cmd_info() {
   local id="$1"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/info?id=${id}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/session/info?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -41,7 +41,7 @@ cmd_create() {
   json_str="$(
     curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
       -H "Content-Type: application/json" \
-      -X PUT --data-binary "$params" "$BASE_URL/api/create?id=${id}&type=${type}")" || \
+      -X PUT --data-binary "$params" "$BASE_URL/api/session/create?id=${id}&type=${type}")" || \
       exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
@@ -59,7 +59,7 @@ cmd_inherit() {
   json_str="$(
     curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
       -H "Content-Type: application/json" \
-      -X PUT --data-binary "$data" "$BASE_URL/api/inherit?id=${id}&type=${type}")" || \
+      -X PUT --data-binary "$data" "$BASE_URL/api/session/inherit?id=${id}&type=${type}")" || \
       exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
@@ -86,7 +86,7 @@ cmd_delete() {
   local json_str exit_code=0
   json_str="$(
     curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
-      -X DELETE --data-binary "$params" "$BASE_URL/api/delete?id=${id}")" || exit_code="$?"
+      -X DELETE --data-binary "$params" "$BASE_URL/api/session/delete?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -99,7 +99,7 @@ cmd_reload() {
   local json_str exit_code=0
   json_str="$(
     curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
-      -X PATCH --data-binary "$params" "$BASE_URL/api/reload?id=${id}")" || exit_code="$?"
+      -X PATCH --data-binary "$params" "$BASE_URL/api/session/reload?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -111,7 +111,7 @@ cmd_status() {
   local id="$1"
   if [ ! "$id" ]; then
     local json_str exit_code=0
-    json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/status_all")" || exit_code="$?"
+    json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/session/status_all")" || exit_code="$?"
     if [ "$exit_code" != "0" ]; then
       echo "$json_str"
       return "$exit_code"
@@ -128,7 +128,7 @@ cmd_status() {
     return
   fi
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/status?id=${id}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/session/status?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -148,13 +148,13 @@ cmd_status() {
 cmd_memo() {
   local id="$1"
   local json_str exit_code=0
-  curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/memo?id=${id}"
+  curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/session/memo?id=${id}"
 }
 
 cmd_history() {
   local id="$1"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/history?id=${id}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/session/history?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -165,7 +165,7 @@ cmd_history() {
 cmd_remark() {
   local id="$1"
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/remark?id=${id}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s "$BASE_URL/api/session/remark?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -178,7 +178,7 @@ cmd_compress() {
   local json_str exit_code=0
   json_str="$(
     curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
-      -X PATCH --data-binary "$params" "$BASE_URL/api/compress?id=${id}")" || exit_code="$?"
+      -X PATCH --data-binary "$params" "$BASE_URL/api/session/compress?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -195,7 +195,7 @@ cmd_send() {
   json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
     -H "Content-Type: application/json" \
     --data-binary "$body" \
-    "$BASE_URL/api/send?id=${id}"
+    "$BASE_URL/api/session/send?id=${id}"
   )" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
@@ -227,7 +227,7 @@ cmd_get() {
     method="PATCH"
   fi
   local json_str exit_code=0
-  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X "$method" "$BASE_URL/api/get?id=${id}")" || exit_code="$?"
+  json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s -X "$method" "$BASE_URL/api/session/get?id=${id}")" || exit_code="$?"
   if [ "$exit_code" != "0" ]; then
     echo "$json_str"
     return "$exit_code"
@@ -298,7 +298,7 @@ cmd_once() {
   json_str="$(curl "${EXTRA_CURL_ARGS[@]}" --fail-with-body -s \
     -H "Content-Type: application/json" \
     --data-binary "$body" \
-    "$BASE_URL/api/once?level=${level}"
+    "$BASE_URL/api/session/once?level=${level}"
   )" || exit_code="$?"
   echo "$json_str"
   return "$exit_code"
