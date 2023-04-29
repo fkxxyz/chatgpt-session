@@ -84,11 +84,12 @@ F. Brain teasers with logic traps;
 G. Foolishly simple, pointless, worthless topics;
 H. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
 I. Humorous topics;
-J. Other academic topics (other than option A), service consulting topics;
-K. Personal psychological and emotional confusion;
-L. Urgent topics;
-M. Other small talk topics;
-N. Unable to classify (such as not understanding the meaning of the topic).
+J. Creation/Writing (including all sci-fi, illogical);
+K. Other academic topics (other than option A), service consulting topics;
+L. Personal psychological and emotional confusion;
+M. Urgent topics;
+N. Other small talk topics;
+O. Unable to classify (such as not understanding the meaning of the topic).
 
 Please choose the category that best fits based on the chat content.
 PLEASE REPLY WITH ONLY ONE CHARACTER (A CAPITAL LETTER) AND REPLY NOTHING ELSE!
@@ -106,10 +107,11 @@ classify_tip_map = {
     'H': '（可用两三句有趣的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
     'I': '（这是在开玩笑，请用两三句搞笑、调侃的方式简单30字以内回应。坚决不要解释在开玩笑以及为什么这样说）',
     'J': '',
-    'K': '（话题走向不理智，请先表示理解情绪，然后进行安抚，慰问更多细节）',
-    'L': '',
-    'M': '（可用两三句有趣的方式简单30字以内回应，坚决不要解释在开玩笑以及为什么这样说）',
-    'N': '',
+    'K': '',
+    'L': '（话题走向不理智，请先表示理解情绪，然后进行安抚，慰问更多细节）',
+    'M': '',
+    'N': '（可用两三句有趣的方式简单30字以内回应，坚决不要解释在开玩笑以及为什么这样说）',
+    'O': '',
 }
 
 
