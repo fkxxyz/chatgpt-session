@@ -11,7 +11,7 @@ from memory import CurrentConversation, EnginePointer
 from rwlock import RWLock
 from schedule import Scheduler
 from session.session import Session
-from session.text import SessionText
+from text import SessionText
 
 
 class SessionManager:

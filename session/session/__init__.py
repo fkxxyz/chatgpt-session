@@ -5,7 +5,7 @@ from typing import List
 from memory import Message
 from schedule import Scheduler
 from session.session.internal import SessionInternal
-from session.text import SessionText
+from text import SessionText
 
 
 @dataclass

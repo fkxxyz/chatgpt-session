@@ -12,7 +12,7 @@ import error
 from memory import Message
 from schedule import Scheduler
 from session.storage import SessionStorage
-from session.text import SessionText
+from text import SessionText
 
 
 @dataclass
