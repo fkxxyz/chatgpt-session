@@ -135,6 +135,9 @@ def rev_chatgpt_web_send(
             # 该帐号会话被恶意删除，增加它的计数
             call_until_success(lambda: api.counter(account, 60))
             raise error.ServerIsBusy(resp.content)
+        elif resp.status_code == http.HTTPStatus.INTERNAL_SERVER_ERROR:
+            if token_len(msg) > 1536:
+                raise error.TooLarge(resp.content)
         elif resp.status_code == http.HTTPStatus.NOT_ACCEPTABLE:
             if token_len(msg) > 1536:
                 raise error.TooLarge(resp.content)
