@@ -76,21 +76,23 @@ def classify_message(message: Message) -> str:
 The preceding is a request inputted to ChatGPT by me as a human. Please categorize its content and select the category that best fits.
 
 Options:
-A. Political, military or social academic topics (including any politically related academics, current political events, government system, social system, social form, Marxism, ideology, etc.);
+A. Sensitive Topics in China (Including politics, political science, political system, government system, social system, social form, Marxism, ideology, modern Chinese history, Internet censorship circumvention, VPN technology or software, etc.; excluding ethics and social responsibility);
 B. Inappropriate topics (pornography, illegal);
-C. Inappropriate topics (disrespectful, impolite, lacks tact);
-D. Inappropriate topics (disgusting, nauseating);
-E. Absurd, illogical topics;
-F. Brain teasers with logic traps;
-G. Foolishly simple, pointless, worthless topics;
-H. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
-I. Humorous topics;
-J. Creation/Writing (including all sci-fi, illogical);
-K. Other academic topics (other than option A), service consulting topics;
-L. Asking or talking about mental or emotional distress;
-M. Urgent topics;
-N. Other small talk topics;
-O. Unable to classify (such as not understanding the meaning of the topic).
+C. Want to know about this AI (including name, age, feature, characteristics, abilities, personality, etc.)
+D. Inappropriate topics (disrespectful, impolite, lacks tact);
+E. Inappropriate topics (disgusting, nauseating);
+F. Absurd, illogical topics (against common sense);
+G. Brain teasers with logic traps;
+H. Foolishly simple, pointless, worthless topics;
+I. Interest and hobby topics (such as entertainment programs, movies, sports, etc.);
+J. Humorous topics;
+K. Creation/Writing (including all sci-fi, illogical);
+L. Other academic topics (other than option A), service consulting topics;
+M. Asking about personal decisions;
+N. Asking or talking about personal mental or emotional distress;
+O. Urgent topics;
+P. Other small talk topics not related to the AI (such as weather, etc);
+Q. Unable to classify (such as not understanding the meaning of the topic).
 '''
 
     if len(message.remark["raw"]) > 96:
@@ -113,19 +115,21 @@ Classification: X
 classify_tip_map = {
     'A': '（请注意该类话题在中国属于敏感话题，严重违反法律，请30字以内拒绝）',
     'B': '（话题走向不适当，请30字以内拒绝）',
-    'C': '（话题走向可能不适当，请30字以内友好回应）',
-    'D': '（话题走向可能不适当或过于愚蠢，请30字以内友好回应）',
-    'E': '（话题走向过于愚蠢荒谬搞笑，请指出荒谬、不现实或搞笑的地方简单30字以内回应）',
-    'F': '（话题趋向过于简单，请打破常规逻辑结合现实找到隐藏的最佳可能性）',
-    'G': '（话题走向过于简单无意义，可能在测试你的能力，请进行30字以内回应）',
-    'H': '',
-    'I': '（请用两三句简单30字以内回应）',
-    'J': '',
+    'C': '',
+    'D': '（话题走向可能不适当，请30字以内友好回应）',
+    'E': '（话题走向可能不适当或过于愚蠢，请30字以内友好回应）',
+    'F': '（话题走向过于愚蠢荒谬搞笑，请指出荒谬、不现实或搞笑的地方简单30字以内回应）',
+    'G': '（话题趋向过于简单，请打破常规逻辑结合现实找到隐藏的最佳可能性）',
+    'H': '（话题走向过于简单无意义，可能在测试你的能力，请进行30字以内回应）',
+    'I': '',
+    'J': '（请用两三句简单30字以内回应）',
     'K': '',
-    'L': '（先正常回应，然后询问更多细节）',
-    'M': '',
-    'N': '（可用两三句简单30字以内回应）',
+    'L': '',
+    'M': '（尽量考虑周全，有必要时询问更多细节）',
+    'N': '（先正常回应，然后询问更多细节）',
     'O': '',
+    'P': '（可用两三句简单30字以内回应）',
+    'Q': '',
 }
 
 
