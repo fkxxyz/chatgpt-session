@@ -233,6 +233,7 @@ def on_send(self: SessionInternal):
                                 while self.writing or self.reading_num > 1:
                                     self.worker_cond.wait()
                                 last_message.remark["classify"] = new_message.msg
+                                last_message.remark["classify_mid"] = classify_mid
                                 self.storage.save()
                             self.logger.info("on_send() classify: %s", last_message.remark["classify"])
 
