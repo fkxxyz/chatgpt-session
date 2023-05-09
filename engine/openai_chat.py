@@ -1,8 +1,10 @@
+import random
+import time
 from dataclasses import dataclass, asdict
 from typing import List
 
 import openai
-from openai.error import AuthenticationError
+from openai.error import AuthenticationError, RateLimitError
 
 import error
 
@@ -32,12 +34,20 @@ class OpenAIChatCompletion:
 
         while self.available():
             openai.api_key = self.__keys[self.__index]
-            try:
-                completion = openai.ChatCompletion.create(model=model, messages=messages_)
-            except AuthenticationError as err:
-                self.__index += 1
-                continue
-            return completion.choices[0].message.content
+            while True:
+                try:
+                    completion = openai.ChatCompletion.create(model=model, messages=messages_)
+                    return completion.choices[0].message.content
+                except AuthenticationError as err:
+                    print(f"OpenAIChatCompletion 响应返回错误 AuthenticationError： {err}")
+                    self.__index += 1
+                    break
+                except RateLimitError as err:
+                    print(f"OpenAIChatCompletion 响应返回错误 RateLimitError： {err}")
+                    wait_s = random.randint(2, 8)
+                    print(f"等待 {wait_s} 秒后重试 ...")
+                    time.sleep(wait_s)
+                    continue
         raise error.NoResource()
 
     def available(self) -> bool:
