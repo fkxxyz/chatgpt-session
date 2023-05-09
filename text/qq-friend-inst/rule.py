@@ -103,13 +103,13 @@ The preceding is a request inputted to ChatGPT by me as a human. Please categori
 Options:'''
     if token_len(message.content) > 1024:
         prompt += message.remark["raw"] + '''
-A. Sensitive Topics in China (Including politics, political science, political system, government system, social system, social form, Marxism, ideology, modern Chinese history, Internet censorship circumvention, VPN technology or software，network accelerator, etc.; excluding ethics and social responsibility);
+A. Sensitive Topics in China (Including politics, political science, political system, government system, social system, social form, Marxism, ideology, modern Chinese history, Internet censorship circumvention, VPN technology or software，network accelerator, etc.; excluding ethics and morality, gender and sexual orientation, social responsibility);
 B. Inappropriate topics (pornography, illegal);
 L. Other topics;
 '''
     else:
         prompt += message.remark["raw"] + '''
-A. Sensitive Topics in China (Including politics, political science, political system, government system, social system, social form, Marxism, ideology, modern Chinese history, Internet censorship circumvention, VPN technology or software，network accelerator, etc.; excluding ethics and social responsibility);
+A. Sensitive Topics in China (Including politics, political science, political system, government system, social system, social form, Marxism, ideology, modern Chinese history, Internet censorship circumvention, VPN technology or software，network accelerator, etc.; excluding ethics and morality, gender and sexual orientation, social responsibility);
 B. Inappropriate topics (pornography, illegal);
 C. Want to know about this AI (including name, age, feature, characteristics, abilities, personality, etc.)
 D. Inappropriate topics (disrespectful, impolite, lacks tact);
